@@ -1,0 +1,12 @@
+﻿namespace WebAPI.DTOs
+{
+    public class ApprovalDto
+    {
+        public int TimesheetId { get; set; }
+        public string ApprovedBy { get; set; } = "";
+        public DateTime ApprovalDate { get; set; }
+        public string ApprovalType { get; set; } = "Manual"; // or Auto
+    }
+
+
+}

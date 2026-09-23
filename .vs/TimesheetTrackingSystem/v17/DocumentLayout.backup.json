@@ -1,0 +1,105 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Timesheet Tracking System\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{C8DC3FAB-86A4-416D-B37A-699BCA29193C}|Application\\Application.csproj|d:\\timesheet tracking system\\application\\interfaces\\itimesheetrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C8DC3FAB-86A4-416D-B37A-699BCA29193C}|Application\\Application.csproj|solutionrelative:application\\interfaces\\itimesheetrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3FB62481-4206-410A-8B15-89362FF4E89A}|WebAPI\\WebAPI.csproj|d:\\timesheet tracking system\\webapi\\controllers\\clientscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3FB62481-4206-410A-8B15-89362FF4E89A}|WebAPI\\WebAPI.csproj|solutionrelative:webapi\\controllers\\clientscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3FB62481-4206-410A-8B15-89362FF4E89A}|WebAPI\\WebAPI.csproj|d:\\timesheet tracking system\\webapi\\controllers\\employeecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3FB62481-4206-410A-8B15-89362FF4E89A}|WebAPI\\WebAPI.csproj|solutionrelative:webapi\\controllers\\employeecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3FB62481-4206-410A-8B15-89362FF4E89A}|WebAPI\\WebAPI.csproj|d:\\timesheet tracking system\\webapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3FB62481-4206-410A-8B15-89362FF4E89A}|WebAPI\\WebAPI.csproj|solutionrelative:webapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AD3D0D5C-4D9D-410D-B7E9-2E64556737F3}|Infrastructure\\Infrastructure.csproj|d:\\timesheet tracking system\\infrastructure\\persistence\\timesheetdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AD3D0D5C-4D9D-410D-B7E9-2E64556737F3}|Infrastructure\\Infrastructure.csproj|solutionrelative:infrastructure\\persistence\\timesheetdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ITimesheetRepository.cs",
+              "DocumentMoniker": "D:\\Timesheet Tracking System\\Application\\Interfaces\\ITimesheetRepository.cs",
+              "RelativeDocumentMoniker": "Application\\Interfaces\\ITimesheetRepository.cs",
+              "ToolTip": "D:\\Timesheet Tracking System\\Application\\Interfaces\\ITimesheetRepository.cs",
+              "RelativeToolTip": "Application\\Interfaces\\ITimesheetRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAA9AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-23T11:20:08.73Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ClientsController.cs",
+              "DocumentMoniker": "D:\\Timesheet Tracking System\\WebAPI\\Controllers\\ClientsController.cs",
+              "RelativeDocumentMoniker": "WebAPI\\Controllers\\ClientsController.cs",
+              "ToolTip": "D:\\Timesheet Tracking System\\WebAPI\\Controllers\\ClientsController.cs",
+              "RelativeToolTip": "WebAPI\\Controllers\\ClientsController.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-23T08:36:17.018Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "EmployeeController.cs",
+              "DocumentMoniker": "D:\\Timesheet Tracking System\\WebAPI\\Controllers\\EmployeeController.cs",
+              "RelativeDocumentMoniker": "WebAPI\\Controllers\\EmployeeController.cs",
+              "ToolTip": "D:\\Timesheet Tracking System\\WebAPI\\Controllers\\EmployeeController.cs",
+              "RelativeToolTip": "WebAPI\\Controllers\\EmployeeController.cs",
+              "ViewState": "AgIAAAcAAAAAAAAAAAAwwBEAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-23T08:08:20.522Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "TimesheetDbContext.cs",
+              "DocumentMoniker": "D:\\Timesheet Tracking System\\Infrastructure\\Persistence\\TimesheetDbContext.cs",
+              "RelativeDocumentMoniker": "Infrastructure\\Persistence\\TimesheetDbContext.cs",
+              "ToolTip": "D:\\Timesheet Tracking System\\Infrastructure\\Persistence\\TimesheetDbContext.cs",
+              "RelativeToolTip": "Infrastructure\\Persistence\\TimesheetDbContext.cs",
+              "ViewState": "AgIAAEoAAAAAAAAAAAAuwGMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-23T07:54:32.961Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\Timesheet Tracking System\\WebAPI\\Program.cs",
+              "RelativeDocumentMoniker": "WebAPI\\Program.cs",
+              "ToolTip": "D:\\Timesheet Tracking System\\WebAPI\\Program.cs",
+              "RelativeToolTip": "WebAPI\\Program.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAwwBMAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-23T07:36:32.232Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
