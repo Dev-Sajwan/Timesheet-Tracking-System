@@ -8,7 +8,7 @@ namespace Domain.Entities;
 
 public class LeaveRecord
 {
-    public int LeaveId { get; set; }
+    public int LeaveRecordId { get; set; }
     public int EmployeeId { get; set; }
     public DateTime Date { get; set; }
     public string LeaveType { get; set; } // Sick, Casual, Holiday

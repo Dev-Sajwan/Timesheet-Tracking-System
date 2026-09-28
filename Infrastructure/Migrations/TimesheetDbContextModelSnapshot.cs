@@ -85,11 +85,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.BenchHour", b =>
                 {
-                    b.Property<int>("BenchId")
+                    b.Property<int>("BenchHourId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BenchId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BenchHourId"));
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
@@ -104,7 +104,7 @@ namespace Infrastructure.Migrations
                     b.Property<int>("Hours")
                         .HasColumnType("int");
 
-                    b.HasKey("BenchId");
+                    b.HasKey("BenchHourId");
 
                     b.HasIndex("EmployeeId");
 
@@ -183,11 +183,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.LeaveRecord", b =>
                 {
-                    b.Property<int>("LeaveId")
+                    b.Property<int>("LeaveRecordId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LeaveId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LeaveRecordId"));
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
@@ -202,7 +202,7 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("LeaveId");
+                    b.HasKey("LeaveRecordId");
 
                     b.HasIndex("EmployeeId");
 
@@ -265,6 +265,12 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("WeekEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("WeekStartDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("TimesheetId");
 
                     b.HasIndex("EmployeeId");
@@ -272,6 +278,34 @@ namespace Infrastructure.Migrations
                     b.HasIndex("ProjectId");
 
                     b.ToTable("Timesheets");
+                });
+
+            modelBuilder.Entity("Domain.Entities.TimesheetEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Hours")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TimesheetId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TimesheetId");
+
+                    b.ToTable("TimesheetEntry");
                 });
 
             modelBuilder.Entity("Domain.Entities.Allocation", b =>
@@ -356,6 +390,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Project");
                 });
 
+            modelBuilder.Entity("Domain.Entities.TimesheetEntry", b =>
+                {
+                    b.HasOne("Domain.Entities.Timesheet", "Timesheet")
+                        .WithMany("Entries")
+                        .HasForeignKey("TimesheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Timesheet");
+                });
+
             modelBuilder.Entity("Domain.Entities.Client", b =>
                 {
                     b.Navigation("Projects");
@@ -382,6 +427,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Timesheet", b =>
                 {
                     b.Navigation("Approvals");
+
+                    b.Navigation("Entries");
                 });
 #pragma warning restore 612, 618
         }

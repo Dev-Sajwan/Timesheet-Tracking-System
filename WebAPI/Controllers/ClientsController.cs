@@ -1,7 +1,8 @@
-﻿using Application.Interfaces;
+﻿using Application.DTOs;
+using Application.Interfaces;
+using AutoMapper;
 using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
-using WebAPI.DTOs;
 
 namespace WebAPI.Controllers
 {
@@ -9,37 +10,54 @@ namespace WebAPI.Controllers
     [Route("api/[controller]")]
     public class ClientsController : ControllerBase
     {
-        private readonly IClientService _service;
+        private readonly IClientService _clientService;
+        private readonly IMapper _mapper;
 
-        public ClientsController(IClientService service) => _service = service;
-
-        [HttpPost]
-        public IActionResult Add(ClientDto dto)
+        public ClientsController(IClientService clientService, IMapper mapper)
         {
-            var client = new Client
-            {
-                ClientName = dto.ClientName,
-                Description = dto.Description
-            };
-            _service.Add(client);
+            _clientService = clientService;
+            _mapper = mapper;
+        }
+
+        // GET: api/clients/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ClientDto>> GetById(int id)
+        {
+            var client = await _clientService.GetByIdAsync(id);
+
+            if (client == null)
+                return NotFound();
+
+            return Ok(_mapper.Map<ClientDto>(client));
+        }
+
+        // GET: api/clients
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<ClientDto>>> GetAll()
+        {
+            var clients = await _clientService.GetAllAsync();
+
+            return Ok(_mapper.Map<IEnumerable<ClientDto>>(clients));
+        }
+
+        // POST: api/clients
+        [HttpPost]
+        public async Task<IActionResult> Add([FromBody] ClientDto dto)
+        {
+            var client = _mapper.Map<Client>(dto);
+
+            await _clientService.AddAsync(client);
+
             return Ok("Client added successfully!");
         }
 
-        [HttpGet]
-        public IActionResult GetAll() => Ok(_service.GetAll());
-
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            var client = _service.GetById(id);
-            return client != null ? Ok(client) : NotFound();
-        }
-
+        // DELETE: api/clients/{id}
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            _service.Delete(id);
-            return Ok("Client deleted successfully!");
+            await _clientService.DeleteAsync(id);
+
+            return NoContent();
         }
     }
 }

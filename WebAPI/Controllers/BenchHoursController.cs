@@ -1,7 +1,9 @@
-﻿using Application.Interfaces;
+﻿
+using Application.DTOs;
+using Application.Interfaces;
+using AutoMapper;
 using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
-using WebAPI.DTOs;
 
 namespace WebAPI.Controllers
 {
@@ -9,39 +11,56 @@ namespace WebAPI.Controllers
     [Route("api/[controller]")]
     public class BenchHoursController : ControllerBase
     {
-        private readonly IBenchHourService _service;
+        private readonly IBenchHourService _benchHourService;
+        private readonly IMapper _mapper;
 
-        public BenchHoursController(IBenchHourService service) => _service = service;
-
-        [HttpPost]
-        public IActionResult Add(BenchHourDto dto)
+        public BenchHoursController(
+            IBenchHourService benchHourService,
+            IMapper mapper)
         {
-            var benchHour = new BenchHour
-            {
-                EmployeeId = dto.EmployeeId,
-                Date = dto.Date,
-                Hours = dto.Hours,
-                Description = dto.Description
-            };
-            _service.Add(benchHour);
+            _benchHourService = benchHourService;
+            _mapper = mapper;
+        }
+
+        // GET: api/benchhours/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<BenchHourDto>> GetById(int id)
+        {
+            var benchHour = await _benchHourService.GetByIdAsync(id);
+
+            if (benchHour == null)
+                return NotFound();
+
+            return Ok(_mapper.Map<BenchHourDto>(benchHour));
+        }
+
+        // GET: api/benchhours
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<BenchHourDto>>> GetAll()
+        {
+            var benchHours = await _benchHourService.GetAllAsync();
+
+            return Ok(_mapper.Map<IEnumerable<BenchHourDto>>(benchHours));
+        }
+
+        // POST: api/benchhours
+        [HttpPost]
+        public async Task<IActionResult> Add([FromBody] BenchHourDto dto)
+        {
+            var benchHour = _mapper.Map<BenchHour>(dto);
+
+            await _benchHourService.AddAsync(benchHour);
+
             return Ok("Bench hour record added successfully!");
         }
 
-        [HttpGet]
-        public IActionResult GetAll() => Ok(_service.GetAll());
-
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            var benchHour = _service.GetById(id);
-            return benchHour != null ? Ok(benchHour) : NotFound();
-        }
-
+        // DELETE: api/benchhours/{id}
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            _service.Delete(id);
-            return Ok("Bench hour record deleted successfully!");
+            await _benchHourService.DeleteAsync(id);
+
+            return NoContent();
         }
     }
 }

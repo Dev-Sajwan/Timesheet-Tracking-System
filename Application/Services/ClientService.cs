@@ -9,9 +9,9 @@ namespace Application.Services
 
         public ClientService(IClientRepository repository) => _repository = repository;
 
-        public void Add(Client client) => _repository.Add(client);
-        public IEnumerable<Client> GetAll() => _repository.GetAll();
-        public Client? GetById(int id) => _repository.GetById(id);
-        public void Delete(int id) => _repository.Delete(id);
+        public async Task AddAsync(Client client) => await _repository.AddAsync(client);
+        public async Task<IEnumerable<Client>> GetAllAsync() => await _repository.GetAllAsync();
+        public async Task<Client?> GetByIdAsync(int id) => await _repository.GetByIdAsync(id);
+        public async Task DeleteAsync(int id) => await _repository.DeleteAsync(id);
     }
 }

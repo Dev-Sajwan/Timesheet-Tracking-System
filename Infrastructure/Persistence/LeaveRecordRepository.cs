@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence
 {
@@ -9,22 +10,22 @@ namespace Infrastructure.Persistence
 
         public LeaveRecordRepository(TimesheetDbContext context) => _context = context;
 
-        public void Add(LeaveRecord leaveRecord)
+        public async Task AddAsync(LeaveRecord leaveRecord)
         {
-            _context.LeaveRecords.Add(leaveRecord);
-            _context.SaveChanges();
+            await _context.LeaveRecords.AddAsync(leaveRecord);
+            await _context.SaveChangesAsync();
         }
 
-        public IEnumerable<LeaveRecord> GetAll() => _context.LeaveRecords.ToList();
-        public LeaveRecord? GetById(int id) => _context.LeaveRecords.Find(id);
+        public async Task<IEnumerable<LeaveRecord>> GetAllAsync() => await _context.LeaveRecords.ToListAsync();
+        public async Task<LeaveRecord?> GetByIdAsync(int id) => await _context.LeaveRecords.FindAsync(id);
 
-        public void Delete(int id)
+        public async Task DeleteAsync(int id)
         {
-            var emp = _context.LeaveRecords.Find(id);
+            var emp = await _context.LeaveRecords.FindAsync(id);
             if (emp != null)
             {
                 _context.LeaveRecords.Remove(emp);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
         }
     }

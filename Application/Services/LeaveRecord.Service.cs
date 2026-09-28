@@ -9,9 +9,9 @@ namespace Application.Services
 
         public LeaveRecordService(ILeaveRecordRepository repository) => _repository = repository;
 
-        public void Add(LeaveRecord leaveRecord) => _repository.Add(leaveRecord);
-        public IEnumerable<LeaveRecord> GetAll() => _repository.GetAll();
-        public LeaveRecord? GetById(int id) => _repository.GetById(id);
-        public void Delete(int id) => _repository.Delete(id);
+        public async Task AddAsync(LeaveRecord leaveRecord) => await _repository.AddAsync(leaveRecord);
+        public async Task<IEnumerable<LeaveRecord>> GetAllAsync() => await _repository.GetAllAsync();
+        public async Task<LeaveRecord?> GetByIdAsync(int id) => await _repository.GetByIdAsync(id);
+        public async Task DeleteAsync(int id) => await _repository.DeleteAsync(id);
     }
 }

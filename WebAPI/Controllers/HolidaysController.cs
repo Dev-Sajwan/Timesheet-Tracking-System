@@ -1,7 +1,9 @@
-﻿using Application.Interfaces;
+﻿
+using Application.DTOs;
+using Application.Interfaces;
+using AutoMapper;
 using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
-using WebAPI.DTOs;
 
 namespace WebAPI.Controllers
 {
@@ -9,37 +11,57 @@ namespace WebAPI.Controllers
     [Route("api/[controller]")]
     public class HolidaysController : ControllerBase
     {
-        private readonly IHolidayService _service;
+        private readonly IHolidayService _holidayService;
+        private readonly IMapper _mapper;
 
-        public HolidaysController(IHolidayService service) => _service = service;
-
-        [HttpPost]
-        public IActionResult Add(HolidayDto dto)
+        public HolidaysController(
+            IHolidayService holidayService,
+            IMapper mapper)
         {
-            var holiday = new Holiday
-            {
-                Description = dto.Description,
-                Date = dto.Date
-            };
-            _service.Add(holiday);
+            _holidayService = holidayService;
+            _mapper = mapper;
+        }
+
+        // GET: api/holidays/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<HolidayDto>> GetById(int id)
+        {
+            var holiday = await _holidayService.GetByIdAsync(id);
+
+            if (holiday == null)
+                return NotFound();
+
+            return Ok(_mapper.Map<HolidayDto>(holiday));
+        }
+
+        // GET: api/holidays
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<HolidayDto>>> GetAll()
+        {
+            var holidays = await _holidayService.GetAllAsync();
+
+            return Ok(_mapper.Map<IEnumerable<HolidayDto>>(holidays));
+        }
+
+        // POST: api/holidays
+        [HttpPost]
+        public async Task<IActionResult> Add([FromBody] HolidayDto dto)
+        {
+            var holiday = _mapper.Map<Holiday>(dto);
+
+            await _holidayService.AddAsync(holiday);
+
             return Ok("Holiday added successfully!");
         }
 
-        [HttpGet]
-        public IActionResult GetAll() => Ok(_service.GetAll());
-
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            var holiday = _service.GetById(id);
-            return holiday != null ? Ok(holiday) : NotFound();
-        }
-
+        // DELETE: api/holidays/{id}
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            _service.Delete(id);
-            return Ok("Holiday deleted successfully!");
+            await _holidayService.DeleteAsync(id);
+
+            return NoContent();
         }
     }
 }
+

@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence
 {
@@ -7,25 +8,48 @@ namespace Infrastructure.Persistence
     {
         private readonly TimesheetDbContext _context;
 
-        public ApprovalRepository(TimesheetDbContext context) => _context = context;
-
-        public void Add(Approval approval)
+        public ApprovalRepository(TimesheetDbContext context)
         {
-            _context.Approvals.Add(approval);
-            _context.SaveChanges();
+            _context = context;
         }
 
-        public IEnumerable<Approval> GetAll() => _context.Approvals.ToList();
-        public Approval? GetById(int id) => _context.Approvals.Find(id);
-
-        public void Delete(int id)
+        public async Task AddAsync(Approval approval)
         {
-            var emp = _context.Approvals.Find(id);
-            if (emp != null)
+            _context.Approvals.AddAsync(approval);
+            _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<Approval>> GetAllAsync()
+        {
+            return await _context.Approvals.ToListAsync();
+        }
+
+        public async Task<Approval?> GetByIdAsync(int id)
+        {
+            return await _context.Approvals.FindAsync(id);
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var approval = await _context.Approvals.FindAsync(id);
+            if (approval != null)
             {
-                _context.Approvals.Remove(emp);
-                _context.SaveChanges();
+                _context.Approvals.Remove(approval);
+                await _context.SaveChangesAsync();
             }
+        }
+
+        // New methods
+        public async Task<Approval> GetByTimesheetIdAsync(int timesheetId)
+        {
+            return await _context.Approvals
+                .FirstOrDefaultAsync(a => a.TimesheetId == timesheetId);
+        }
+
+        public async Task UpdateAsync(Approval approval)
+        {
+            _context.Approvals.Update(approval);
+            await _context.SaveChangesAsync();
         }
     }
 }

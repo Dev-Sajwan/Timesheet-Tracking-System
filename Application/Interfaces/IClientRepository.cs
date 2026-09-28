@@ -4,9 +4,9 @@ namespace Application.Interfaces
 {
     public interface IClientRepository
     {
-        void Add(Client client);
-        IEnumerable<Client> GetAll();
-        Client? GetById(int id);
-        void Delete(int id);
+        Task AddAsync(Client client);
+        Task<IEnumerable<Client>> GetAllAsync();
+        Task<Client?> GetByIdAsync(int id);
+        Task DeleteAsync(int id);
     }
 }

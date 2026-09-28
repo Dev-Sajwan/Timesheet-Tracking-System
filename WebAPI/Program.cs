@@ -1,8 +1,8 @@
+using Application.Interfaces;
+using Application.Mappings;
+using Application.Services;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models; // Add this using directive for Swagger
-using Application.Interfaces;
-using Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,11 +14,14 @@ Console.WriteLine("========================================");
 Console.WriteLine("DEFAULT CONNECTION STRING:");
 Console.WriteLine(connectionString);
 Console.WriteLine("========================================");
+Console.WriteLine("Content Root: " + builder.Environment.ContentRootPath);
 
+//Console.WriteLine("Environment: " + builder.Environment.EnvironmentName);
 
 builder.Services.AddDbContext<TimesheetDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
+builder.Services.AddScoped<ITimesheetDbContext>(provider => provider.GetRequiredService<TimesheetDbContext>());
 
 
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
@@ -43,7 +46,17 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ITimesheetService, TimesheetService>();
 
 
+// Register AutoMapper with all profiles in Application.Mappings
+//builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<MappingProfile>();
+});
 
+foreach (var provider in ((IConfigurationRoot)builder.Configuration).Providers)
+{
+    Console.WriteLine(provider);
+}
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

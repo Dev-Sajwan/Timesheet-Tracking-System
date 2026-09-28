@@ -4,9 +4,9 @@ namespace Application.Interfaces
 {
     public interface IBenchHourRepository
     {
-        void Add(BenchHour benchHour);
-        IEnumerable<BenchHour> GetAll();
-        BenchHour? GetById(int id);
-        void Delete(int id);
+        Task AddAsync(BenchHour benchHour);
+        Task<IEnumerable<BenchHour>> GetAllAsync();
+        Task <BenchHour?> GetByIdAsync(int id);
+        Task DeleteAsync(int id);
     }
 }

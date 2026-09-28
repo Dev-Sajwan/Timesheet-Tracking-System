@@ -1,6 +1,26 @@
 [
   {
     "ContainingType": "WebAPI.Controllers.AllocationsController",
+    "Method": "GetAll",
+    "RelativePath": "api/Allocations",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Application.DTOs.AllocationDto, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.AllocationsController",
     "Method": "Add",
     "RelativePath": "api/Allocations",
     "HttpMethod": "POST",
@@ -9,20 +29,10 @@
     "Parameters": [
       {
         "Name": "dto",
-        "Type": "WebAPI.DTOs.AllocationDto",
+        "Type": "Application.DTOs.AllocationDto",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.AllocationsController",
-    "Method": "GetAll",
-    "RelativePath": "api/Allocations",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -39,7 +49,17 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "Application.DTOs.AllocationDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "WebAPI.Controllers.AllocationsController",
@@ -59,61 +79,122 @@
   },
   {
     "ContainingType": "WebAPI.Controllers.ApprovalsController",
-    "Method": "Add",
-    "RelativePath": "api/Approvals",
+    "Method": "Approve",
+    "RelativePath": "api/Approvals/{timesheetId}/approve",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "dto",
-        "Type": "WebAPI.DTOs.ApprovalDto",
+        "Name": "timesheetId",
+        "Type": "System.Int32",
         "IsRequired": true
+      },
+      {
+        "Name": "approverName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "approvalType",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
   },
   {
     "ContainingType": "WebAPI.Controllers.ApprovalsController",
+    "Method": "Reject",
+    "RelativePath": "api/Approvals/{timesheetId}/reject",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "timesheetId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "approverName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "approvalType",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.ApprovalsController",
+    "Method": "Submit",
+    "RelativePath": "api/Approvals/{timesheetId}/submit",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "timesheetId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "approvalType",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.ApprovalsController",
+    "Method": "GetByTimesheetId",
+    "RelativePath": "api/Approvals/timesheet/{timesheetId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "timesheetId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "Application.DTOs.ApprovalDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.BenchHoursController",
     "Method": "GetAll",
-    "RelativePath": "api/Approvals",
+    "RelativePath": "api/BenchHours",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.ApprovalsController",
-    "Method": "GetById",
-    "RelativePath": "api/Approvals/{id}",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
+    "ReturnTypes": [
       {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Application.DTOs.BenchHourDto, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
       }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.ApprovalsController",
-    "Method": "Delete",
-    "RelativePath": "api/Approvals/{id}",
-    "HttpMethod": "DELETE",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
+    ]
   },
   {
     "ContainingType": "WebAPI.Controllers.BenchHoursController",
@@ -125,20 +206,10 @@
     "Parameters": [
       {
         "Name": "dto",
-        "Type": "WebAPI.DTOs.BenchHourDto",
+        "Type": "Application.DTOs.BenchHourDto",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.BenchHoursController",
-    "Method": "GetAll",
-    "RelativePath": "api/BenchHours",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -155,7 +226,17 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "Application.DTOs.BenchHourDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "WebAPI.Controllers.BenchHoursController",
@@ -175,6 +256,26 @@
   },
   {
     "ContainingType": "WebAPI.Controllers.ClientsController",
+    "Method": "GetAll",
+    "RelativePath": "api/Clients",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Application.DTOs.ClientDto, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.ClientsController",
     "Method": "Add",
     "RelativePath": "api/Clients",
     "HttpMethod": "POST",
@@ -183,20 +284,10 @@
     "Parameters": [
       {
         "Name": "dto",
-        "Type": "WebAPI.DTOs.ClientDto",
+        "Type": "Application.DTOs.ClientDto",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.ClientsController",
-    "Method": "GetAll",
-    "RelativePath": "api/Clients",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -213,7 +304,17 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "Application.DTOs.ClientDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "WebAPI.Controllers.ClientsController",
@@ -233,7 +334,27 @@
   },
   {
     "ContainingType": "WebAPI.Controllers.EmployeesController",
-    "Method": "Add",
+    "Method": "GetAll",
+    "RelativePath": "api/Employees",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Application.DTOs.EmployeeDto, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.EmployeesController",
+    "Method": "Create",
     "RelativePath": "api/Employees",
     "HttpMethod": "POST",
     "IsController": true,
@@ -241,20 +362,10 @@
     "Parameters": [
       {
         "Name": "dto",
-        "Type": "WebAPI.DTOs.EmployeeDto",
+        "Type": "Application.DTOs.EmployeeDto",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.EmployeesController",
-    "Method": "GetAll",
-    "RelativePath": "api/Employees",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -271,6 +382,37 @@
         "IsRequired": true
       }
     ],
+    "ReturnTypes": [
+      {
+        "Type": "Application.DTOs.EmployeeDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.EmployeesController",
+    "Method": "Update",
+    "RelativePath": "api/Employees/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "Application.DTOs.EmployeeDto",
+        "IsRequired": true
+      }
+    ],
     "ReturnTypes": []
   },
   {
@@ -290,16 +432,21 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "WebAPI.Controllers.HolidaysController",
-    "Method": "Add",
-    "RelativePath": "api/Holidays",
-    "HttpMethod": "POST",
+    "ContainingType": "WebAPI.Controllers.EmployeesController",
+    "Method": "AssignEmployeeToProject",
+    "RelativePath": "api/Employees/{projectId}/employees/{employeeId}",
+    "HttpMethod": "PUT",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "dto",
-        "Type": "WebAPI.DTOs.HolidayDto",
+        "Name": "projectId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "employeeId",
+        "Type": "System.Int32",
         "IsRequired": true
       }
     ],
@@ -313,6 +460,32 @@
     "IsController": true,
     "Order": 0,
     "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Application.DTOs.HolidayDto, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.HolidaysController",
+    "Method": "Add",
+    "RelativePath": "api/Holidays",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "Application.DTOs.HolidayDto",
+        "IsRequired": true
+      }
+    ],
     "ReturnTypes": []
   },
   {
@@ -329,7 +502,17 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "Application.DTOs.HolidayDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "WebAPI.Controllers.HolidaysController",
@@ -349,6 +532,26 @@
   },
   {
     "ContainingType": "WebAPI.Controllers.LeaveRecordsController",
+    "Method": "GetAll",
+    "RelativePath": "api/LeaveRecords",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Application.DTOs.LeaveRecordDto, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.LeaveRecordsController",
     "Method": "Add",
     "RelativePath": "api/LeaveRecords",
     "HttpMethod": "POST",
@@ -357,20 +560,10 @@
     "Parameters": [
       {
         "Name": "dto",
-        "Type": "WebAPI.DTOs.LeaveRecordDto",
+        "Type": "Application.DTOs.LeaveRecordDto",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.LeaveRecordsController",
-    "Method": "GetAll",
-    "RelativePath": "api/LeaveRecords",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -387,7 +580,17 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "Application.DTOs.LeaveRecordDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "WebAPI.Controllers.LeaveRecordsController",
@@ -407,7 +610,27 @@
   },
   {
     "ContainingType": "WebAPI.Controllers.ProjectsController",
-    "Method": "Add",
+    "Method": "GetAll",
+    "RelativePath": "api/Projects",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Application.DTOs.ProjectDto, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.ProjectsController",
+    "Method": "Create",
     "RelativePath": "api/Projects",
     "HttpMethod": "POST",
     "IsController": true,
@@ -415,20 +638,10 @@
     "Parameters": [
       {
         "Name": "dto",
-        "Type": "WebAPI.DTOs.ProjectDto",
+        "Type": "Application.DTOs.ProjectDto",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.ProjectsController",
-    "Method": "GetAll",
-    "RelativePath": "api/Projects",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -445,6 +658,37 @@
         "IsRequired": true
       }
     ],
+    "ReturnTypes": [
+      {
+        "Type": "Application.DTOs.ProjectDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.ProjectsController",
+    "Method": "Update",
+    "RelativePath": "api/Projects/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "Application.DTOs.ProjectDto",
+        "IsRequired": true
+      }
+    ],
     "ReturnTypes": []
   },
   {
@@ -457,6 +701,27 @@
     "Parameters": [
       {
         "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.ProjectsController",
+    "Method": "AssignEmployeeToProject",
+    "RelativePath": "api/Projects/{projectId}/employees/{employeeId}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "projectId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "employeeId",
         "Type": "System.Int32",
         "IsRequired": true
       }
@@ -465,15 +730,82 @@
   },
   {
     "ContainingType": "WebAPI.Controllers.TimesheetsController",
-    "Method": "GetByEmployee",
-    "RelativePath": "api/Timesheets/{employeeId}",
+    "Method": "GetAll",
+    "RelativePath": "api/Timesheets",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Application.DTOs.TimesheetDto, Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.TimesheetsController",
+    "Method": "Create",
+    "RelativePath": "api/Timesheets",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "Application.DTOs.TimesheetDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.TimesheetsController",
+    "Method": "GetById",
+    "RelativePath": "api/Timesheets/{id}",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "employeeId",
+        "Name": "id",
         "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "Application.DTOs.TimesheetDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "WebAPI.Controllers.TimesheetsController",
+    "Method": "Update",
+    "RelativePath": "api/Timesheets/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "Application.DTOs.TimesheetDto",
         "IsRequired": true
       }
     ],
@@ -490,48 +822,6 @@
       {
         "Name": "id",
         "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.TimesheetsController",
-    "Method": "GetAll",
-    "RelativePath": "api/Timesheets/all",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.TimesheetsController",
-    "Method": "Approve",
-    "RelativePath": "api/Timesheets/approve/{id}",
-    "HttpMethod": "PUT",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "WebAPI.Controllers.TimesheetsController",
-    "Method": "Submit",
-    "RelativePath": "api/Timesheets/submit",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "dto",
-        "Type": "WebAPI.DTOs.TimesheetDto",
         "IsRequired": true
       }
     ],

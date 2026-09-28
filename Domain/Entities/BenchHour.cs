@@ -8,7 +8,7 @@ namespace Domain.Entities;
 
 public class BenchHour
 {
-    public int BenchId { get; set; }
+    public int BenchHourId { get; set; }
     public int EmployeeId { get; set; }
     public DateTime Date { get; set; }
     public int Hours { get; set; }

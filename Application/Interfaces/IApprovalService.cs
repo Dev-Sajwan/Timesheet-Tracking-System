@@ -4,9 +4,12 @@ namespace Application.Interfaces
 {
     public interface IApprovalService
     {
-        void Add(Approval approval);
-        IEnumerable<Approval> GetAll();
-        Approval? GetById(int id);
-        void Delete(int id);
+        Task<Approval> GetByTimesheetIdAsync(int timesheetId);
+
+        Task SubmitAsync(int timesheetId, string approvalType = "Manual");
+
+        Task ApproveAsync(int timesheetId, string approverName, string approvalType = "Manual");
+
+        Task RejectAsync(int timesheetId, string approverName, string approvalType = "Manual");
     }
 }

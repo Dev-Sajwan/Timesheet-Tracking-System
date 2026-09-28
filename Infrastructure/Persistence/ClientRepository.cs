@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence
 {
@@ -9,22 +10,22 @@ namespace Infrastructure.Persistence
 
         public ClientRepository(TimesheetDbContext context) => _context = context;
 
-        public void Add(Client client)
+        public async Task AddAsync(Client client)
         {
-            _context.Clients.Add(client);
-            _context.SaveChanges();
+            _context.Clients.AddAsync(client);
+            _context.SaveChangesAsync();
         }
 
-        public IEnumerable<Client> GetAll() => _context.Clients.ToList();
-        public Client? GetById(int id) => _context.Clients.Find(id);
+        public async Task<IEnumerable<Client>> GetAllAsync() => await _context.Clients.ToListAsync();
+        public async Task<Client?> GetByIdAsync(int id) => await _context.Clients.FindAsync(id);
 
-        public void Delete(int id)
+        public async Task DeleteAsync(int id)
         {
-            var emp = _context.Clients.Find(id);
+            var emp = await _context.Clients.FindAsync(id);
             if (emp != null)
             {
                 _context.Clients.Remove(emp);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
         }
     }

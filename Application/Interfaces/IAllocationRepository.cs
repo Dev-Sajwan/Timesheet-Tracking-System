@@ -4,9 +4,11 @@ namespace Application.Interfaces
 {
     public interface IAllocationRepository
     {
-        void Add(Allocation allocation);
-        IEnumerable<Allocation> GetAll();
-        Allocation? GetById(int id);
-        void Delete(int id);
+        Task AddAsync(Allocation allocation);
+        Task<IEnumerable<Allocation>> GetAllAsync();
+        Task <Allocation?> GetByIdAsync(int id);
+        Task<Allocation?> GetByEmployeeAndProjectAsync(int employeeId, int projectId);
+        Task UpdateAsync(Allocation allocation);
+        Task DeleteAsync(int id);
     }
 }

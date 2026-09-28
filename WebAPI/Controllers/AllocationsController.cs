@@ -1,7 +1,8 @@
-﻿using Application.Interfaces;
+﻿using Application.DTOs;
+using Application.Interfaces;
+using AutoMapper;
 using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
-using WebAPI.DTOs;
 
 namespace WebAPI.Controllers
 {
@@ -9,40 +10,55 @@ namespace WebAPI.Controllers
     [Route("api/[controller]")]
     public class AllocationsController : ControllerBase
     {
-        private readonly IAllocationService _service;
+        private readonly IAllocationService _allocationService;
+        private readonly IMapper _mapper;
 
-        public AllocationsController(IAllocationService service) => _service = service;
-
-        [HttpPost]
-        public IActionResult Add([FromBody] AllocationDto dto)
+        public AllocationsController(
+            IAllocationService allocationService,
+            IMapper mapper)
         {
-            var allocation = new Allocation
-            {
-                EmployeeId = dto.EmployeeId,
-                ProjectId = dto.ProjectId,
-                AllocationPercent = dto.AllocationPercent,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate
-            };
+            _allocationService = allocationService;
+            _mapper = mapper;
+        }
 
-            _service.Add(allocation);
+        // GET: api/allocations/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<AllocationDto>> GetById(int id)
+        {
+            var allocation = await _allocationService.GetByIdAsync(id);
+
+            if (allocation == null)
+                return NotFound();
+
+            return Ok(_mapper.Map<AllocationDto>(allocation));
+        }
+
+        // GET: api/allocations
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<AllocationDto>>> GetAll()
+        {
+            var allocations = await _allocationService.GetAllAsync();
+
+            return Ok(_mapper.Map<IEnumerable<AllocationDto>>(allocations));
+        }
+
+        // POST: api/allocations
+        [HttpPost]
+        public async Task<IActionResult> Add([FromBody] AllocationDto dto)
+        {
+            var allocation = _mapper.Map<Allocation>(dto);
+
+            await _allocationService.AddAsync(allocation);
+
             return Ok("Allocation added successfully!");
         }
 
-        [HttpGet]
-        public IActionResult GetAll() => Ok(_service.GetAll());
-
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            var allocation = _service.GetById(id);
-            return allocation != null ? Ok(allocation) : NotFound();
-        }
-
+        // DELETE: api/allocations/{id}
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            _service.Delete(id);
+            await _allocationService.DeleteAsync(id);
+
             return Ok("Allocation deleted successfully!");
         }
     }

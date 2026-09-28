@@ -9,9 +9,13 @@ namespace Application.Services
 
         public AllocationService(IAllocationRepository repository) => _repository = repository;
 
-        public void Add(Allocation allocation) => _repository.Add(allocation);
-        public IEnumerable<Allocation> GetAll() => _repository.GetAll();
-        public Allocation? GetById(int id) => _repository.GetById(id);
-        public void Delete(int id) => _repository.Delete(id);
+        public async Task AddAsync(Allocation allocation) => await _repository.AddAsync(allocation);
+        public async Task<IEnumerable<Allocation>> GetAllAsync() => await _repository.GetAllAsync();
+        public async Task<Allocation?> GetByIdAsync(int id) => await _repository.GetByIdAsync(id);
+        public async Task<Allocation?> GetByEmployeeAndProjectAsync(int employeeId, int projectId) =>
+            await _repository.GetByEmployeeAndProjectAsync(employeeId, projectId);
+        public async Task DeleteAsync(int id) => await _repository.DeleteAsync(id);
+        public async Task UpdateAsync(Allocation allocation) =>   // <-- implement update
+        await _repository.UpdateAsync(allocation);
     }
 }

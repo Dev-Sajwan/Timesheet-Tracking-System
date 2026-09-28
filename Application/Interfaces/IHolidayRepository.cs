@@ -4,9 +4,9 @@ namespace Application.Interfaces
 {
     public interface IHolidayRepository
     {
-        void Add(Holiday holiday);
-        IEnumerable<Holiday> GetAll();
-        Holiday? GetById(int id);
-        void Delete(int id);
+        Task AddAsync(Holiday holiday);
+        Task<IEnumerable<Holiday>> GetAllAsync();
+        Task<Holiday?> GetByIdAsync(int id);
+        Task DeleteAsync(int id);
     }
 }

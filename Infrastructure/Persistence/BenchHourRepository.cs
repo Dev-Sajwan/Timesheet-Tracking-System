@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence
 {
@@ -9,22 +10,22 @@ namespace Infrastructure.Persistence
 
         public BenchHourRepository(TimesheetDbContext context) => _context = context;
 
-        public void Add(BenchHour benchHour)
+        public async Task AddAsync(BenchHour benchHour)
         {
-            _context.BenchHours.Add(benchHour);
-            _context.SaveChanges();
+            _context.BenchHours.AddAsync(benchHour);
+            _context.SaveChangesAsync();
         }
 
-        public IEnumerable<BenchHour> GetAll() => _context.BenchHours.ToList();
-        public BenchHour? GetById(int id) => _context.BenchHours.Find(id);
+        public async Task<IEnumerable<BenchHour>> GetAllAsync() => await _context.BenchHours.ToListAsync();
+        public async Task<BenchHour?> GetByIdAsync(int id) => await _context.BenchHours.FindAsync(id);
 
-        public void Delete(int id)
+        public async Task DeleteAsync(int id)
         {
-            var emp = _context.BenchHours.Find(id);
+            var emp = await _context.BenchHours.FindAsync(id);
             if (emp != null)
             {
                 _context.BenchHours.Remove(emp);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
         }
     }

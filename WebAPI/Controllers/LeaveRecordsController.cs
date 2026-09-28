@@ -1,7 +1,9 @@
-﻿using Application.Interfaces;
+﻿
+using Application.DTOs;
+using Application.Interfaces;
+using AutoMapper;
 using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
-using WebAPI.DTOs;
 
 namespace WebAPI.Controllers
 {
@@ -9,39 +11,56 @@ namespace WebAPI.Controllers
     [Route("api/[controller]")]
     public class LeaveRecordsController : ControllerBase
     {
-        private readonly ILeaveRecordService _service;
+        private readonly ILeaveRecordService _leaveRecordService;
+        private readonly IMapper _mapper;
 
-        public LeaveRecordsController(ILeaveRecordService service) => _service = service;
-
-        [HttpPost]
-        public IActionResult Add(LeaveRecordDto dto)
+        public LeaveRecordsController(
+            ILeaveRecordService leaveRecordService,
+            IMapper mapper)
         {
-            var leaveRecord = new LeaveRecord
-            {
-                EmployeeId = dto.EmployeeId,
-                Date = dto.Date,
-                LeaveType = dto.LeaveType,
-                Hours = dto.Hours
-            };
-            _service.Add(leaveRecord);
+            _leaveRecordService = leaveRecordService;
+            _mapper = mapper;
+        }
+
+        // GET: api/leaverecords/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<LeaveRecordDto>> GetById(int id)
+        {
+            var leaveRecord = await _leaveRecordService.GetByIdAsync(id);
+
+            if (leaveRecord == null)
+                return NotFound();
+
+            return Ok(_mapper.Map<LeaveRecordDto>(leaveRecord));
+        }
+
+        // GET: api/leaverecords
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<LeaveRecordDto>>> GetAll()
+        {
+            var leaveRecords = await _leaveRecordService.GetAllAsync();
+
+            return Ok(_mapper.Map<IEnumerable<LeaveRecordDto>>(leaveRecords));
+        }
+
+        // POST: api/leaverecords
+        [HttpPost]
+        public async Task<IActionResult> Add([FromBody] LeaveRecordDto dto)
+        {
+            var leaveRecord = _mapper.Map<LeaveRecord>(dto);
+
+            await _leaveRecordService.AddAsync(leaveRecord);
+
             return Ok("Leave record added successfully!");
         }
 
-        [HttpGet]
-        public IActionResult GetAll() => Ok(_service.GetAll());
-
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            var leaveRecord = _service.GetById(id);
-            return leaveRecord != null ? Ok(leaveRecord) : NotFound();
-        }
-
+        // DELETE: api/leaverecords/{id}
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            _service.Delete(id);
-            return Ok("Leave record deleted successfully!");
+            await _leaveRecordService.DeleteAsync(id);
+
+            return NoContent();
         }
     }
 }

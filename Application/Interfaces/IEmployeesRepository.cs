@@ -4,9 +4,10 @@ namespace Application.Interfaces
 {
     public interface IEmployeeRepository
     {
-        void Add(Employee employee);
-        IEnumerable<Employee> GetAll();
-        Employee? GetById(int id);
-        void Delete(int id);
+        Task<Employee?> GetByIdAsync(int id);
+        Task<IEnumerable<Employee>> GetAllAsync();
+        Task AddAsync(Employee employee);
+        Task UpdateAsync(Employee employee);
+        Task DeleteAsync(int id);
     }
 }

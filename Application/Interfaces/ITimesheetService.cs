@@ -1,13 +1,19 @@
-﻿namespace Application.Interfaces
-{
-    using Domain.Entities;
+﻿using Domain.Entities;
 
+namespace Application.Interfaces
+{
     public interface ITimesheetService
     {
-        void Submit(Timesheet timesheet);
-        IEnumerable<Timesheet> GetByEmployee(int employeeId);
-        IEnumerable<Timesheet> GetAll();
-        void Approve(int timesheetId);
-        void Delete(int timesheetId);
+        Task<IEnumerable<Timesheet>> GetAllAsync();
+        Task<Timesheet> GetByIdAsync(int id);
+        Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(int employeeId, DateTime weekStart);
+        Task AddAsync(Timesheet timesheet);
+        Task UpdateAsync(Timesheet timesheet);
+        Task DeleteAsync(int id);
+
+        // Approval workflow methods
+        Task SubmitAsync(int id);
+        Task ApproveAsync(int id);
+        Task RejectAsync(int id);
     }
 }

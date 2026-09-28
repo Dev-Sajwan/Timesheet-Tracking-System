@@ -1,7 +1,9 @@
-﻿namespace WebAPI.DTOs
+﻿namespace Application.DTOs
 {
     public class AllocationDto
     {
+
+        public int AllocationId { get; set; }
         public int EmployeeId { get; set; }
         public int ProjectId { get; set; }
         public int AllocationPercent { get; set; }

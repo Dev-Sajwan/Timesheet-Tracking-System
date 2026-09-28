@@ -9,9 +9,9 @@ namespace Application.Services
 
         public HolidayService(IHolidayRepository repository) => _repository = repository;
 
-        public void Add(Holiday holiday) => _repository.Add(holiday);
-        public IEnumerable<Holiday> GetAll() => _repository.GetAll();
-        public Holiday? GetById(int id) => _repository.GetById(id);
-        public void Delete(int id) => _repository.Delete(id);
+        public async Task AddAsync(Holiday holiday) => await _repository.AddAsync(holiday);
+        public async Task<IEnumerable<Holiday>> GetAllAsync() => await _repository.GetAllAsync();
+        public async Task<Holiday?> GetByIdAsync(int id) => await _repository.GetByIdAsync(id);
+        public async Task DeleteAsync(int id) => await _repository.DeleteAsync(id);
     }
 }

@@ -1,7 +1,9 @@
-﻿using Application.Interfaces;
+﻿using Application.DTOs;
+using Application.Interfaces;
+using Application.Services;
+using AutoMapper;
 using Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
-using WebAPI.DTOs;
 
 namespace WebAPI.Controllers
 {
@@ -9,39 +11,100 @@ namespace WebAPI.Controllers
     [Route("api/[controller]")]
     public class EmployeesController : ControllerBase
     {
-        private readonly IEmployeeService _service;
+        private readonly IEmployeeService _employeeService;
+        private readonly IProjectService _projectService;
+        private readonly IAllocationService _allocationService;
+        private readonly IMapper _mapper;
 
-        public EmployeesController(IEmployeeService service) => _service = service;
+        public EmployeesController(IEmployeeService employeeService, IProjectService projectService, IAllocationService allocationService, IMapper mapper)
+        {
+            _employeeService = employeeService;
+            _allocationService = allocationService;
+            _projectService = projectService;
+            _mapper = mapper;
+        }
+
+        // GET: api/employees/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<EmployeeDto>> GetById(int id)
+        {
+            var employee = await _employeeService.GetByIdAsync(id);
+            if (employee == null) return NotFound();
+
+            return Ok(_mapper.Map<EmployeeDto>(employee));
+        }
+
+        // GET: api/employees
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetAll()
+        {
+            var employees = await _employeeService.GetAllAsync();
+            return Ok(_mapper.Map<IEnumerable<EmployeeDto>>(employees));
+        }
+
+        // POST: api/employees
 
         [HttpPost]
-        public IActionResult Add(EmployeeDto dto)
+        public async Task<IActionResult> Create([FromBody] EmployeeDto dto)
         {
-            var employee = new Employee
+            var entity = _mapper.Map<Employee>(dto);
+            await _employeeService.AddAsync(entity);
+            return CreatedAtAction(nameof(GetById), new { id = entity.EmployeeId }, dto);
+        }
+
+        [HttpPut("{projectId}/employees/{employeeId}")]
+        public async Task<IActionResult> AssignEmployeeToProject(int projectId, int employeeId)
+        {
+            var project = await _projectService.GetByIdAsync(projectId);
+            var employee = await _employeeService.GetByIdAsync(employeeId);
+
+            if (project == null || employee == null)
+                return NotFound("Project or Employee not found");
+
+            // Check if allocation already exists
+            var existingAllocation = await _allocationService.GetByEmployeeAndProjectAsync(employeeId, projectId);
+
+            if (existingAllocation != null)
             {
-                Name = dto.Name,
-                Email = dto.Email,
-                Role = dto.Role,
-                Status = dto.Status
-            };
-            _service.Add(employee);
-            return Ok("Employee added successfully!");
+                // Update existing allocation (e.g., reset start date)
+                existingAllocation.StartDate = DateTime.UtcNow;
+                await _allocationService.UpdateAsync(existingAllocation);
+                return Ok($"Employee {employee.Name} re-assigned to Project {project.ProjectName}");
+            }
+            else
+            {
+                // Create new allocation
+                var allocation = new Allocation
+                {
+                    EmployeeId = employeeId,
+                    ProjectId = projectId,
+                    StartDate = DateTime.UtcNow
+                };
+
+                await _allocationService.AddAsync(allocation);
+                return Ok($"Employee {employee.Name} assigned to Project {project.ProjectName}");
+            }
         }
 
-        [HttpGet]
-        public IActionResult GetAll() => Ok(_service.GetAll());
 
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+
+        // PUT: api/employees/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] EmployeeDto dto)
         {
-            var emp = _service.GetById(id);
-            return emp != null ? Ok(emp) : NotFound();
+            if (id != dto.EmployeeId) return BadRequest("ID mismatch");
+
+            var entity = _mapper.Map<Employee>(dto);
+            await _employeeService.UpdateAsync(entity);
+            return NoContent();
         }
 
+        // DELETE: api/employees/{id}
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            _service.Delete(id);
-            return Ok("Employee deleted successfully!");
+            await _employeeService.DeleteAsync(id);
+            return NoContent();
         }
     }
 }

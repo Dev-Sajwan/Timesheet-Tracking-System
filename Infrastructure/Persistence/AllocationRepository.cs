@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence
 {
@@ -9,23 +10,36 @@ namespace Infrastructure.Persistence
 
         public AllocationRepository(TimesheetDbContext context) => _context = context;
 
-        public void Add(Allocation allocation)
+        public async Task AddAsync(Allocation allocation)
         {
-            _context.Allocations.Add(allocation);
-            _context.SaveChanges();
+            await _context.Allocations.AddAsync(allocation);
+            await _context.SaveChangesAsync();
         }
 
-        public IEnumerable<Allocation> GetAll() => _context.Allocations.ToList();
-        public Allocation? GetById(int id) => _context.Allocations.Find(id);
+        public async Task<IEnumerable<Allocation>> GetAllAsync() => await _context.Allocations.ToListAsync();
+        public async Task<Allocation?> GetByIdAsync(int id) => await _context.Allocations.FindAsync(id);
 
-        public void Delete(int id)
+        public async Task<Allocation?> GetByEmployeeAndProjectAsync(int employeeId, int projectId)
         {
-            var emp = _context.Allocations.Find(id);
+            return await _context.Allocations
+                .FirstOrDefaultAsync(a => a.EmployeeId == employeeId && a.ProjectId == projectId);
+        }
+
+
+        public async Task DeleteAsync(int id)
+        {
+            var emp = await _context.Allocations.FindAsync(id);
             if (emp != null)
             {
                 _context.Allocations.Remove(emp);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
+        }
+
+        public async Task UpdateAsync(Allocation allocation)   // <-- implement update
+        {
+            _context.Allocations.Update(allocation);
+            await _context.SaveChangesAsync();
         }
     }
 }

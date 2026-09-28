@@ -5,47 +5,6 @@
     "version": "1.0"
   },
   "paths": {
-    "/api/Allocations": {
-      "post": {
-        "tags": [
-          "Allocations"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AllocationDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AllocationDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/AllocationDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Allocations"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/Allocations/{id}": {
       "get": {
         "tags": [
@@ -64,7 +23,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AllocationDto"
+                }
+              }
+            }
           }
         }
       },
@@ -85,60 +61,86 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/Approvals": {
+    "/api/Allocations": {
+      "get": {
+        "tags": [
+          "Allocations"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AllocationDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AllocationDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AllocationDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "Approvals"
+          "Allocations"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApprovalDto"
+                "$ref": "#/components/schemas/AllocationDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApprovalDto"
+                "$ref": "#/components/schemas/AllocationDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ApprovalDto"
+                "$ref": "#/components/schemas/AllocationDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Approvals"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/Approvals/{id}": {
+    "/api/Approvals/timesheet/{timesheetId}": {
       "get": {
         "tags": [
           "Approvals"
         ],
         "parameters": [
           {
-            "name": "id",
+            "name": "timesheetId",
             "in": "path",
             "required": true,
             "schema": {
@@ -149,69 +151,131 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDto"
+                }
+              }
+            }
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/api/Approvals/{timesheetId}/submit": {
+      "post": {
         "tags": [
           "Approvals"
         ],
         "parameters": [
           {
-            "name": "id",
+            "name": "timesheetId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "approvalType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "Manual"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/BenchHours": {
+    "/api/Approvals/{timesheetId}/approve": {
       "post": {
         "tags": [
-          "BenchHours"
+          "Approvals"
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BenchHourDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BenchHourDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/BenchHourDto"
-              }
+        "parameters": [
+          {
+            "name": "timesheetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "approverName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "approvalType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "Manual"
             }
           }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "BenchHours"
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Approvals/{timesheetId}/reject": {
+      "post": {
+        "tags": [
+          "Approvals"
+        ],
+        "parameters": [
+          {
+            "name": "timesheetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "approverName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "approvalType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "Manual"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         }
       }
@@ -234,7 +298,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchHourDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchHourDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchHourDto"
+                }
+              }
+            }
           }
         }
       },
@@ -255,48 +336,74 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/Clients": {
+    "/api/BenchHours": {
+      "get": {
+        "tags": [
+          "BenchHours"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BenchHourDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BenchHourDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BenchHourDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "Clients"
+          "BenchHours"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ClientDto"
+                "$ref": "#/components/schemas/BenchHourDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ClientDto"
+                "$ref": "#/components/schemas/BenchHourDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ClientDto"
+                "$ref": "#/components/schemas/BenchHourDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Clients"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -319,7 +426,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientDto"
+                }
+              }
+            }
           }
         }
       },
@@ -340,48 +464,74 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/Employees": {
+    "/api/Clients": {
+      "get": {
+        "tags": [
+          "Clients"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "Employees"
+          "Clients"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EmployeeDto"
+                "$ref": "#/components/schemas/ClientDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/EmployeeDto"
+                "$ref": "#/components/schemas/ClientDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/EmployeeDto"
+                "$ref": "#/components/schemas/ClientDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Employees"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -404,7 +554,64 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Employees"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployeeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         }
       },
@@ -425,48 +632,106 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/Holidays": {
+    "/api/Employees": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "Holidays"
+          "Employees"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/HolidayDto"
+                "$ref": "#/components/schemas/EmployeeDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/HolidayDto"
+                "$ref": "#/components/schemas/EmployeeDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/HolidayDto"
+                "$ref": "#/components/schemas/EmployeeDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
-      },
-      "get": {
+      }
+    },
+    "/api/Employees/{projectId}/employees/{employeeId}": {
+      "put": {
         "tags": [
-          "Holidays"
+          "Employees"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "employeeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -489,7 +754,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HolidayDto"
+                }
+              }
+            }
           }
         }
       },
@@ -510,48 +792,74 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/LeaveRecords": {
+    "/api/Holidays": {
+      "get": {
+        "tags": [
+          "Holidays"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolidayDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolidayDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HolidayDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "LeaveRecords"
+          "Holidays"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LeaveRecordDto"
+                "$ref": "#/components/schemas/HolidayDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/LeaveRecordDto"
+                "$ref": "#/components/schemas/HolidayDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/LeaveRecordDto"
+                "$ref": "#/components/schemas/HolidayDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "LeaveRecords"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -574,7 +882,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRecordDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRecordDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRecordDto"
+                }
+              }
+            }
           }
         }
       },
@@ -595,48 +920,74 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/Projects": {
+    "/api/LeaveRecords": {
+      "get": {
+        "tags": [
+          "LeaveRecords"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeaveRecordDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeaveRecordDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeaveRecordDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "Projects"
+          "LeaveRecords"
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProjectDto"
+                "$ref": "#/components/schemas/LeaveRecordDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProjectDto"
+                "$ref": "#/components/schemas/LeaveRecordDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/ProjectDto"
+                "$ref": "#/components/schemas/LeaveRecordDto"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Projects"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -659,7 +1010,64 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         }
       },
@@ -680,12 +1088,147 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/Timesheets/submit": {
+    "/api/Projects": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Projects/{projectId}/employees/{employeeId}": {
+      "put": {
+        "tags": [
+          "Projects"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "employeeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Timesheets": {
+      "get": {
+        "tags": [
+          "Timesheets"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimesheetDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimesheetDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimesheetDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Timesheets"
@@ -711,48 +1254,13 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
     },
-    "/api/Timesheets/{employeeId}": {
+    "/api/Timesheets/{id}": {
       "get": {
-        "tags": [
-          "Timesheets"
-        ],
-        "parameters": [
-          {
-            "name": "employeeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Timesheets/all": {
-      "get": {
-        "tags": [
-          "Timesheets"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Timesheets/approve/{id}": {
-      "put": {
         "tags": [
           "Timesheets"
         ],
@@ -769,12 +1277,67 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimesheetDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimesheetDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimesheetDto"
+                }
+              }
+            }
           }
         }
-      }
-    },
-    "/api/Timesheets/{id}": {
+      },
+      "put": {
+        "tags": [
+          "Timesheets"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimesheetDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimesheetDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimesheetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
       "delete": {
         "tags": [
           "Timesheets"
@@ -792,7 +1355,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Success"
           }
         }
       }
@@ -803,6 +1366,10 @@
       "AllocationDto": {
         "type": "object",
         "properties": {
+          "allocationId": {
+            "type": "integer",
+            "format": "int32"
+          },
           "employeeId": {
             "type": "integer",
             "format": "int32"
@@ -830,6 +1397,10 @@
       "ApprovalDto": {
         "type": "object",
         "properties": {
+          "approvalId": {
+            "type": "integer",
+            "format": "int32"
+          },
           "timesheetId": {
             "type": "integer",
             "format": "int32"
@@ -874,6 +1445,10 @@
       "ClientDto": {
         "type": "object",
         "properties": {
+          "clientId": {
+            "type": "integer",
+            "format": "int32"
+          },
           "clientName": {
             "type": "string",
             "nullable": true
@@ -888,6 +1463,10 @@
       "EmployeeDto": {
         "type": "object",
         "properties": {
+          "employeeId": {
+            "type": "integer",
+            "format": "int32"
+          },
           "name": {
             "type": "string",
             "nullable": true
@@ -950,6 +1529,10 @@
             "type": "integer",
             "format": "int32"
           },
+          "projectId": {
+            "type": "integer",
+            "format": "int32"
+          },
           "projectName": {
             "type": "string",
             "nullable": true
@@ -969,6 +1552,10 @@
       "TimesheetDto": {
         "type": "object",
         "properties": {
+          "timesheetId": {
+            "type": "integer",
+            "format": "int32"
+          },
           "employeeId": {
             "type": "integer",
             "format": "int32"
@@ -990,6 +1577,54 @@
             "nullable": true
           },
           "approvalStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "weekStartDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "weekEndDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimesheetEntryDto"
+            },
+            "nullable": true
+          },
+          "approvals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApprovalDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TimesheetEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timesheetId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
             "type": "string",
             "nullable": true
           }
