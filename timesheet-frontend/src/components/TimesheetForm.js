@@ -4,21 +4,33 @@ import {
   getProjects,
   getAllocations,   // <-- NEW
   getAllTimesheets,
-  submitTimesheet
+  submitTimesheet,
+  getBenchHours,
+  addBenchHour
 } from "../Services/Api";
 
 export default function Timesheets() {
+  const getTodayDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+   return `${year}-${month}-${day}`;
+  };
   const [employees, setEmployees] = useState([]);
   const [projects, setProjects] = useState([]);
   const [allocations, setAllocations] = useState([]); // NEW
   const [timesheets, setTimesheets] = useState([]);
   const [timesheetError, setTimesheetError] = useState("");
   const [filteredProjects, setFilteredProjects] = useState([]);
+  const [benchHours, setBenchHours] = useState([]);
   const [filters, setFilters] = useState({ employeeId: "", projectId: "", date: "" });
   const [newTimesheet, setNewTimesheet] = useState({
     employeeId: "",
+    entryType: "Project",
     projectId: "",
-    date: "",
+    date: getTodayDate(),
     hours: "",
     description: ""
   });
@@ -28,6 +40,7 @@ export default function Timesheets() {
     loadProjects();
     loadAllocations();   // NEW
     loadTimesheets();
+    loadBenchHours();
   }, []);
 
   const loadEmployees = async () => {
@@ -59,12 +72,21 @@ export default function Timesheets() {
     }
   };
 
+  const loadBenchHours = async () => {
+    try {
+      const res = await getBenchHours();
+      setBenchHours(res.data);
+    } catch (error) {
+      setTimesheetError("Unable to load bench hours.");
+    }
+  };
+
   const handleEmployeeChange = (employeeId) => {
     setNewTimesheet({ ...newTimesheet, employeeId, projectId: "" });
 
     // ✅ Correct filtering using allocations
     const assignedProjects = allocations
-      .filter((a) => a.employeeId === Number(employeeId))
+      .filter((a) => String(a.employeeId) === String(employeeId))
       .map((a) => projects.find((p) => p.projectId === a.projectId))
       .filter(Boolean);
 
@@ -72,18 +94,41 @@ export default function Timesheets() {
   };
 
   const handleAddTimesheet = async () => {
-    const employeeId = Number(newTimesheet.employeeId);
+    const employeeId = newTimesheet.employeeId;
     const projectId = Number(newTimesheet.projectId);
     const hoursWorked = Number(newTimesheet.hours);
 
-    if (!employeeId || !projectId || !newTimesheet.date || !hoursWorked) {
-      setTimesheetError("Employee, project, date, and hours are required.");
+    if (!employeeId || !newTimesheet.date || hoursWorked <= 0) {
+      setTimesheetError(
+        "Employee, date, and valid hours are required."
+      );
       return;
     }
 
-    const entryDate = new Date(`${newTimesheet.date}T00:00:00`).toISOString();
+      if (
+        newTimesheet.entryType === "Project" &&
+        !newTimesheet.projectId
+      ) {
+        setTimesheetError("Please select a project.");
+        return;
+      }
 
+        // const entryDate = new Date(
+        //   `${newTimesheet.date}T00:00:00`
+        // ).toISOString();  // Convert to ISO format for backend
+        const entryDate = newTimesheet.date;
+        
     try {
+    if (newTimesheet.entryType === "Bench") {
+      await addBenchHour({
+        employeeId,
+        date: entryDate,
+        hours: hoursWorked,
+        description: newTimesheet.description
+      });
+
+      await loadBenchHours();
+    } else {
       await submitTimesheet({
         employeeId,
         projectId,
@@ -102,34 +147,93 @@ export default function Timesheets() {
         ],
         approvals: []
       });
-      setNewTimesheet({ employeeId: "", projectId: "", date: "", hours: "", description: "" });
-      setTimesheetError("");
+
       await loadTimesheets();
-    } catch (error) {
-      const validationErrors = error.response?.data?.errors;
-      const validationMessage = validationErrors
-        ? Object.values(validationErrors).flat().join(" ")
-        : "Unable to submit timesheet.";
-      setTimesheetError(validationMessage);
     }
-  };
+
+    setNewTimesheet({
+      employeeId: "",
+      entryType: "Project",
+      projectId: "",
+      date: getTodayDate(),
+      hours: "",
+      description: ""
+    });
+
+    setFilteredProjects([]);
+    setTimesheetError("");
+  } catch (error) {
+    const validationErrors = error.response?.data?.errors;
+
+    const message = validationErrors
+      ? Object.values(validationErrors).flat().join(" ")
+      : error.response?.data?.title ||
+        "Unable to submit entry.";
+
+    setTimesheetError(message);
+  }
+};
 
   // ✅ Apply filters correctly
-  const formatDate = (dateStr) => {
-      if (!dateStr) return "";
-      return new Date(dateStr).toLocaleDateString("en-US"); // MM/DD/YYYY
-    };
+  // Format dates consistently
+const formatDate = (dateStr) => {
+  if (!dateStr) return "";
 
-    const filteredTimesheets = timesheets.filter((ts) => {
-    const tsDateFormatted = formatDate(ts.date);
-    const filterDateFormatted = filters.date ? formatDate(filters.date) : "";
+  // Keep date-only values unchanged
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
 
-    return (
-      (filters.employeeId ? ts.employeeId === Number(filters.employeeId) : true) &&
-      (filters.projectId ? ts.projectId === Number(filters.projectId) : true) &&
-      (filters.date ? tsDateFormatted === filterDateFormatted : true)
-    );
-  });
+  // For ISO datetime values, use the date portion
+  return dateStr.substring(0, 10);
+};
+
+// Filter project timesheets
+const filteredTimesheets = timesheets.filter((ts) => {
+  return (
+    (!filters.employeeId ||
+      String(ts.employeeId) === String(filters.employeeId)) &&
+    (!filters.projectId ||
+      Number(ts.projectId) === Number(filters.projectId)) &&
+    (!filters.date ||
+      formatDate(ts.date) === filters.date)
+  );
+});
+
+
+
+const filteredBenchHours = benchHours.filter((bench) => {
+  return (
+    (!filters.employeeId ||
+      String(bench.employeeId) === String(filters.employeeId)) &&
+    !filters.projectId &&
+    (!filters.date ||
+      formatDate(bench.date) === filters.date)
+  );
+});
+
+// Combine project timesheets and bench hours
+const displayEntries = [
+  ...filteredTimesheets.map((ts) => ({
+    id: `timesheet-${ts.timesheetId}`,
+    type: "Project",
+    employeeId: ts.employeeId,
+    projectId: ts.projectId,
+    date: ts.date,
+    hours: ts.hoursWorked,
+    description: ts.entries?.[0]?.description || "",
+  })),
+
+  ...filteredBenchHours.map((bench) => ({
+    id: `bench-${bench.benchHourId}`,
+    type: "Bench",
+    employeeId: bench.employeeId,
+    projectId: null,
+    date: bench.date,
+    hours: bench.hours,
+    description: bench.description || "",
+  })),
+];
 
 
 
@@ -154,12 +258,30 @@ export default function Timesheets() {
               >
                 <option value="">Select Employee</option>
                 {employees.map((emp) => (
-                  <option key={emp.employeeId} value={emp.employeeId}>
+                  <option key={emp.id} value={emp.id}>
                     {emp.name}
                   </option>
                 ))}
               </select>
             </td>
+            <td>
+              <label>Entry Type</label><br />
+
+              <select
+                value={newTimesheet.entryType}
+                onChange={(e) =>
+                  setNewTimesheet({
+                    ...newTimesheet,
+                    entryType: e.target.value,
+                    projectId: ""
+                  })
+                }
+              >
+                <option value="Project">Project</option>
+                <option value="Bench">Bench</option>
+              </select>
+            </td>
+            {newTimesheet.entryType === "Project" && (
             <td>
               <label>Project</label><br />
               <select
@@ -174,7 +296,7 @@ export default function Timesheets() {
                   </option>
                 ))}
               </select>
-            </td>
+            </td>)}
             <td>
               <label>Date</label><br />
               <input
@@ -215,7 +337,7 @@ export default function Timesheets() {
         >
           <option value="">Filter by Employee</option>
           {employees.map((emp) => (
-            <option key={emp.employeeId} value={emp.employeeId}>
+            <option key={emp.id} value={emp.id}>
               {emp.name}
             </option>
           ))}
@@ -247,6 +369,7 @@ export default function Timesheets() {
         <thead>
           <tr>
             <th>Employee</th>
+            <th>Type</th>
             <th>Project</th>
             <th>Date</th>
             <th>Hours</th>
@@ -254,16 +377,28 @@ export default function Timesheets() {
           </tr>
         </thead>
         <tbody>
-          {filteredTimesheets.map((ts) => (
-            <tr key={ts.timesheetId}>
-              <td>{employees.find((e) => e.employeeId === ts.employeeId)?.name}</td>
-              <td>{projects.find((p) => p.projectId === ts.projectId)?.projectName}</td>
-              <td>{formatDate(ts.date)}</td>
-              <td>{ts.hoursWorked} hr</td> {/* ✅ root-level hours */}
-              <td>{ts.entries?.[0]?.description || ""}</td> {/* ✅ from entries */}
-            </tr>
-          ))}
-        </tbody>
+        {displayEntries.map((entry) => (
+          <tr key={entry.id}>
+            <td>
+              {employees.find(
+                (e) => String(e.id) === String(entry.employeeId)
+              )?.name || entry.employeeId}
+            </td>
+            <td>{entry.type}</td>
+            <td>
+              {entry.projectId
+                ? projects.find(
+                    (p) =>
+                      Number(p.projectId) === Number(entry.projectId)
+                  )?.projectName || entry.projectId
+                : "—"}
+            </td>
+            <td>{formatDate(entry.date)}</td>
+            <td>{entry.hours} hr</td>
+            <td>{entry.description}</td>
+          </tr>
+        ))}
+      </tbody>
       </table>
     </div>
   );

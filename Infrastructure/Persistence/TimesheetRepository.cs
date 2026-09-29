@@ -28,7 +28,7 @@ namespace Infrastructure.Persistence
                 .Include(t => t.Entries)
                 .FirstOrDefaultAsync(t => t.TimesheetId == id);
 
-        public async Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(int employeeId, DateTime weekStart) =>
+        public async Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(string employeeId, DateTime weekStart) =>
             await _context.Timesheets
                 .Where(t => t.EmployeeId == employeeId && t.WeekStartDate == weekStart)
                 .Include(t => t.Entries)
@@ -68,8 +68,8 @@ namespace Infrastructure.Persistence
         //        .Include(t => t.Entries)
         //        .ToListAsync();
 
-        public async Task<bool> ExistsForWeekAsync(int employeeId, DateTime weekStart) =>
-            await _context.Timesheets.AnyAsync(t => t.EmployeeId == employeeId && t.WeekStartDate == weekStart);
+        public async Task<bool> ExistsForWeekAsync(string employeeId, DateTime weekStart) =>
+    await _context.Timesheets.AnyAsync(t => t.EmployeeId == employeeId && t.WeekStartDate == weekStart);
     }
 
 }

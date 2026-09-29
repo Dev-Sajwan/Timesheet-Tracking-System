@@ -20,7 +20,7 @@ namespace Application.Services
             return await _timesheetRepository.GetByIdAsync(id);
         }
 
-        public async Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(int employeeId, DateTime weekStart)
+        public async Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(string employeeId, DateTime weekStart)
         {
             return await _timesheetRepository.GetByEmployeeAndWeekAsync(employeeId, weekStart);
         }

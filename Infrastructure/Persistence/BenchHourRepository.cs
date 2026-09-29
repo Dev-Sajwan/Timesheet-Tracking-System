@@ -12,8 +12,8 @@ namespace Infrastructure.Persistence
 
         public async Task AddAsync(BenchHour benchHour)
         {
-            _context.BenchHours.AddAsync(benchHour);
-            _context.SaveChangesAsync();
+            await _context.BenchHours.AddAsync(benchHour);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<BenchHour>> GetAllAsync() => await _context.BenchHours.ToListAsync();

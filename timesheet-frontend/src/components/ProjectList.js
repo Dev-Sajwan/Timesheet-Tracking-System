@@ -84,34 +84,38 @@ export default function ProjectList() {
       placeholder="Client Name"
       value={newClient.clientName}
       onChange={(e) => setNewClient({ ...newClient, clientName: e.target.value })}
+      style={{ marginRight: "5px" }}
     />
     <input
       placeholder="Description"
       value={newClient.description}
       onChange={(e) => setNewClient({ ...newClient, description: e.target.value })}
+      style={{ marginRight: "5px" }}
     />
-    <button onClick={handleAddClient}>Save Client</button>
+    <button onClick={handleAddClient} style={{ marginRight: "5px" }}>Save Client</button>
     <button onClick={() => setNewProject({ ...newProject, clientId: "" })}>Cancel</button>
   </div>
 )}
 
 
       {/* Add Project Button */}
-      <button onClick={() => setShowForm(!showForm)} padding="10px" style={{ marginRight: "15px" }}>
+      <button onClick={() => setShowForm(!showForm)} padding="10px" style={{marginRight: "10px" }}>
         {showForm ? "Cancel" : "➕ Add Project"}
       </button>
 
       {/* Add Project Form */}
       {showForm && (
-        <div style={{ marginTop: "15px", border: "1px solid #ccc", padding: "10px" }}>
+        <div style={{ marginTop: "15px", border: "1px solid #ccc", padding: "10px"}}>
           <input
             placeholder="Project Name"
             value={newProject.projectName}
             onChange={(e) => setNewProject({ ...newProject, projectName: e.target.value })}
+            style={{ marginRight: "5px" }}
           />
           <select
             value={newProject.clientId}
             onChange={(e) => setNewProject({ ...newProject, clientId: e.target.value })}
+            style={{ marginRight: "5px" }}
           >
             <option value="">Select Client</option>
             {clients.map((c) => (
@@ -120,17 +124,20 @@ export default function ProjectList() {
               </option>
             ))}
             <option value="add">➕ Add New Client</option>
+            
           </select>
 
           <input
             type="date"
             value={newProject.startDate}
             onChange={(e) => setNewProject({ ...newProject, startDate: e.target.value })}
+            style={{ marginRight: "5px" }}
           />
           <input
             type="date"
             value={newProject.endDate}
             onChange={(e) => setNewProject({ ...newProject, endDate: e.target.value })}
+            style={{ marginRight: "5px" }}
           />
           <button onClick={handleAddProject}>Save Project</button>
         </div>

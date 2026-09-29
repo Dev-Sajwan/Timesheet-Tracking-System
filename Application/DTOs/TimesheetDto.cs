@@ -3,7 +3,7 @@
     public class TimesheetDto
     {
         public int TimesheetId { get; set; }
-        public int EmployeeId { get; set; }
+        public string? EmployeeId { get; set; }
         public int ProjectId { get; set; }
         public DateTime Date { get; set; }
         public int HoursWorked { get; set; }

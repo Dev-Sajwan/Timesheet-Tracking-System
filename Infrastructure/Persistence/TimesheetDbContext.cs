@@ -23,9 +23,18 @@ namespace Infrastructure.Persistence
             return base.SaveChangesAsync(cancellationToken);
         }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            // Your entity configurations (already defined)
-        }
+        //protected override void OnModelCreating(ModelBuilder modelBuilder)
+        //{
+        //    base.OnModelCreating(modelBuilder);
+
+        //    modelBuilder.Entity<Employee>()
+        //        .HasMany(e => e.Timesheets)
+        //        .WithOne(t => t.Employee)
+        //        .HasForeignKey(t => t.EmployeeId)
+        //        .IsRequired();
+
+        //    modelBuilder.Entity<Timesheet>()
+        //        .HasKey(t => t.TimesheetId);
+        //}
     }
 }

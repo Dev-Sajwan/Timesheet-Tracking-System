@@ -1,7 +1,9 @@
 using Application.Interfaces;
 using Application.Mappings;
 using Application.Services;
+using Domain.Entities;
 using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +35,7 @@ builder.Services.AddScoped<IHolidayRepository, HolidayRepository>();
 builder.Services.AddScoped<ILeaveRecordRepository, LeaveRecordRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<ITimesheetRepository, TimesheetRepository>();
+builder.Services.AddScoped<IPasswordHasher<Employee>, PasswordHasher<Employee>>();
 
 
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
@@ -61,6 +64,10 @@ foreach (var provider in ((IConfigurationRoot)builder.Configuration).Providers)
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddIdentity<Employee, IdentityRole>()
+    .AddEntityFrameworkStores<TimesheetDbContext>()
+    .AddDefaultTokenProviders();
+
 
 builder.Services.AddCors(options =>
 {

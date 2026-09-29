@@ -13,7 +13,7 @@ public class TimesheetEntry
     public DateTime Date { get; set; }
     public int Hours { get; set; }
     //public TaskType TaskType { get; set; } // Project, Bench, Leave, Holiday
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     public Timesheet Timesheet { get; set; }
 }

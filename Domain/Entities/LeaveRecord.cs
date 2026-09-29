@@ -9,11 +9,11 @@ namespace Domain.Entities;
 public class LeaveRecord
 {
     public int LeaveRecordId { get; set; }
-    public int EmployeeId { get; set; }
+    public string? EmployeeId { get; set; }
     public DateTime Date { get; set; }
     public string LeaveType { get; set; } // Sick, Casual, Holiday
     public int Hours { get; set; } = 8; // Default 8 hrs/day
 
-    public Employee Employee { get; set; }
+    public Employee? Employee { get; set; }
 }
 

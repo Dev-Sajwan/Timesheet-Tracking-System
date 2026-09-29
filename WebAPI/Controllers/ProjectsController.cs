@@ -54,7 +54,7 @@ namespace WebAPI.Controllers
 
 
         [HttpPut("{projectId}/employees/{employeeId}")]
-        public async Task<IActionResult> AssignEmployeeToProject(int projectId, int employeeId)
+        public async Task<IActionResult> AssignEmployeeToProject(int projectId, string employeeId)
         {
             var project = await _projectService.GetByIdAsync(projectId);
             var employee = await _employeeService.GetByIdAsync(employeeId);

@@ -9,10 +9,10 @@ namespace Domain.Entities;
 public class BenchHour
 {
     public int BenchHourId { get; set; }
-    public int EmployeeId { get; set; }
+    public string? EmployeeId { get; set; }
     public DateTime Date { get; set; }
     public int Hours { get; set; }
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
-    public Employee Employee { get; set; }
+    public Employee? Employee { get; set; }
 }

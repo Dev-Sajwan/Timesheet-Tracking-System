@@ -6,7 +6,7 @@ namespace Application.Interfaces
     {
         Task<IEnumerable<Timesheet>> GetAllAsync();
         Task<Timesheet> GetByIdAsync(int id);
-        Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(int employeeId, DateTime weekStart);
+        Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(string employeeId, DateTime weekStart);
         Task AddAsync(Timesheet timesheet);
         Task UpdateAsync(Timesheet timesheet);
         Task DeleteAsync(int id);
@@ -14,7 +14,7 @@ namespace Application.Interfaces
         // New methods
         //Task<IEnumerable<Timesheet>> GetPendingApprovalsAsync(int managerId);
         Task<IEnumerable<Timesheet>> GetPendingApprovalsAsync();
-        Task<bool> ExistsForWeekAsync(int employeeId, DateTime weekStart);
+        Task<bool> ExistsForWeekAsync(string employeeId, DateTime weekStart);
     }
 
 }

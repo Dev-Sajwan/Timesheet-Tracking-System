@@ -7,7 +7,7 @@ namespace Application.Interfaces
         Task AddAsync(Allocation allocation);
         Task<IEnumerable<Allocation>> GetAllAsync();
         Task <Allocation?> GetByIdAsync(int id);
-        Task<Allocation?> GetByEmployeeAndProjectAsync(int employeeId, int projectId);
+        Task<Allocation?> GetByEmployeeAndProjectAsync(string employeeId, int projectId);
         Task UpdateAsync(Allocation allocation);
         Task DeleteAsync(int id);
     }
