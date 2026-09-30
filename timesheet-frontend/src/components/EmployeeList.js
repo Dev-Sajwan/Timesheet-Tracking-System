@@ -82,15 +82,18 @@ export default function EmployeeList() {
             placeholder="Name"
             value={newEmployee.name}
             onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+            style={{ marginRight: "5px" }}
           />
           <input
             placeholder="Email"
             value={newEmployee.email}
             onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+            style={{ marginRight: "5px" }}
           />
           <select
             value={newEmployee.Role}
             onChange={(e) => setNewEmployee({ ...newEmployee, Role: e.target.value })}
+            style={{ marginRight: "5px" }}
           >
            <option value="">Select Role</option>
             <option value="Manager">Manager</option>
@@ -100,6 +103,7 @@ export default function EmployeeList() {
           <select
             value={newEmployee.Status}
             onChange={(e) => setNewEmployee({ ...newEmployee, Status: e.target.value })}
+            style={{ marginRight: "5px" }}
           >
             <option value="">Select Status</option>
             <option value="Active">Active</option>
@@ -179,15 +183,18 @@ export default function EmployeeList() {
             placeholder="Name"
             value={editingEmployee.name}
             onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
+            style={{ marginRight: "5px" }}
           />
           <input
             placeholder="Email"
             value={editingEmployee.email}
             onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
+            style={{ marginRight: "5px" }}
           />
           <select
             value={editingEmployee.role || ""}
             onChange={(e) => setEditingEmployee({ ...editingEmployee, role: e.target.value })}
+            style={{ marginRight: "5px" }}
           >
             <option value="">Role</option>
             <option value="Manager">Manager</option>
@@ -197,12 +204,13 @@ export default function EmployeeList() {
           <select
             value={editingEmployee.status || ""}
             onChange={(e) => setEditingEmployee({ ...editingEmployee, status: e.target.value })}
+            style={{ marginRight: "5px" }}
           >
             <option value="">Status</option>
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
           </select>
-          <button onClick={handleUpdateEmployee}>Update Employee</button>
+          <button onClick={handleUpdateEmployee} style={{ marginRight: "5px" }}>Update Employee</button>
           <button onClick={() => setEditingEmployee(null)}>Cancel</button>
         </div>
       )}
