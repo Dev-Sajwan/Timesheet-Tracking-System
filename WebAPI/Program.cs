@@ -8,6 +8,11 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Ensure appsettings files take priority over any externally injected configuration
+//// (e.g., Visual Studio Connected Services / ChainedConfigurationProvider)
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
 // Add services
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
