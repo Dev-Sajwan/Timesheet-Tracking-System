@@ -11,8 +11,8 @@ namespace Application.Interfaces
         Task AddAsync(Employee employee);
         Task UpdateAsync(Employee employee);
         Task DeleteAsync(string id);
-        Task<Employee> RegisterUser(CreateUserRequestDto request);
-        Task<bool> Authenticate(LoginRequest request);
-        Task AssignRole(AssignRoleRequest request);
+        //Task<Employee> RegisterUser(CreateUserRequestDto request);
+        //Task<bool> Authenticate(LoginRequest request);
+        //Task AssignRole(AssignRoleRequest request);
     }
 }

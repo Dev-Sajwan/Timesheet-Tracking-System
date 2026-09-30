@@ -1,10 +1,11 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence
 {
-    public class TimesheetDbContext : DbContext, ITimesheetDbContext
+    public class TimesheetDbContext : IdentityDbContext<ApplicationUser>, ITimesheetDbContext
     {
         public TimesheetDbContext(DbContextOptions<TimesheetDbContext> options) : base(options) { }
 
@@ -18,23 +19,14 @@ namespace Infrastructure.Persistence
         public DbSet<Holiday> Holidays { get; set; }
         public DbSet<Approval> Approvals { get; set; }
 
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-            return base.SaveChangesAsync(cancellationToken);
+            base.OnModelCreating(builder);
+
+            builder.Entity<Employee>()
+                .HasOne(e => e.User)
+                .WithOne()
+                .HasForeignKey<Employee>(e => e.UserId);
         }
-
-        //protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //    base.OnModelCreating(modelBuilder);
-
-        //    modelBuilder.Entity<Employee>()
-        //        .HasMany(e => e.Timesheets)
-        //        .WithOne(t => t.Employee)
-        //        .HasForeignKey(t => t.EmployeeId)
-        //        .IsRequired();
-
-        //    modelBuilder.Entity<Timesheet>()
-        //        .HasKey(t => t.TimesheetId);
-        //}
     }
 }

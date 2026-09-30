@@ -64,7 +64,11 @@ foreach (var provider in ((IConfigurationRoot)builder.Configuration).Providers)
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddIdentity<Employee, IdentityRole>()
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+    options.User.RequireUniqueEmail = true;
+})
     .AddEntityFrameworkStores<TimesheetDbContext>()
     .AddDefaultTokenProviders();
 

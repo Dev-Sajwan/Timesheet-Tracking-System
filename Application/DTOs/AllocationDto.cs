@@ -10,7 +10,25 @@
         public DateTime StartDate { get; set; }
         public DateTime? EndDate { get; set; }
     }
+    public class RegisterRequestDto
+    {
+        public string UserName { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
+     public class LoginRequestDto
+     {
+         public string UserName { get; set; }
+         public string Password { get; set; }
+     }
+
+     public class AssignRoleRequestDto
+     {
+         public string UserName { get; set; }
+         public string Role { get; set; }
+     }
+ }
 
 
 
-}

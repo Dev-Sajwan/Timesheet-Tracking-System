@@ -12,10 +12,10 @@ namespace Application.Interfaces
         Task DeleteAsync(string id);
 
         // Add for user functionality
-        Task<Employee?> GetByUserName(string userName);
-        Task<Employee?> GetByEmail(string email);
-        Task<Employee> InsertUser(Employee employee);
-        Task<bool> ValidatePassword(Employee employee, string password);
-        Task AssignRole(string employeeId, string roleName);
+        //Task<Employee?> GetByUserName(string userName);
+        //Task<Employee?> GetByEmail(string email);
+        //Task<Employee> InsertUser(Employee employee);
+        //Task<bool> ValidatePassword(Employee employee, string password);
+        //Task AssignRole(string employeeId, string roleName);
     }
 }

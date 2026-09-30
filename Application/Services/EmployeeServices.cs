@@ -38,30 +38,30 @@ namespace Application.Services
         public async Task DeleteAsync(string id) =>
             await _employeeRepository.DeleteAsync(id);
 
-        public async Task<Employee> RegisterUser(CreateUserRequestDto request)
-        {
-            var employee = await _employeeRepository.GetByEmail(request.Email);
-            if (employee == null) throw new Exception("Employee not found");
+        //public async Task<Employee> RegisterUser(CreateUserRequestDto request)
+        //{
+        //    var employee = await _employeeRepository.GetByEmail(request.Email);
+        //    if (employee == null) throw new Exception("Employee not found");
 
-            employee.UserName = request.UserName;
-            employee.PasswordHash = _passwordHasher.HashPassword(employee, request.Password);
-            employee.IsActiveUser = true;
+        //    employee.UserName = request.UserName;
+        //    employee.PasswordHash = _passwordHasher.HashPassword(employee, request.Password);
+        //    employee.IsActiveUser = true;
 
-            return await _employeeRepository.InsertUser(employee);
-        }
+        //    return await _employeeRepository.InsertUser(employee);
+        //}
 
-        public async Task<bool> Authenticate(LoginRequest request)
-        {
-            var employee = await _employeeRepository.GetByUserName(request.UserName);
-            if (employee == null) return false;
+        //public async Task<bool> Authenticate(LoginRequest request)
+        //{
+        //    var employee = await _employeeRepository.GetByUserName(request.UserName);
+        //    if (employee == null) return false;
 
-            return await _employeeRepository.ValidatePassword(employee, request.Password);
-        }
+        //    return await _employeeRepository.ValidatePassword(employee, request.Password);
+        //}
 
-        public async Task AssignRole(AssignRoleRequest request)
-        {
-            await _employeeRepository.AssignRole(request.EmployeeId, request.RoleName);
-        }
+        //public async Task AssignRole(AssignRoleRequest request)
+        //{
+        //    await _employeeRepository.AssignRole(request.EmployeeId, request.RoleName);
+        //}
 
     }
 }

@@ -97,7 +97,7 @@ export default function EmployeeList() {
           >
            <option value="">Select Role</option>
             <option value="Manager">Manager</option>
-            <option value="Developer">Developer</option>
+            <option value="Admin">Admin</option>
             <option value="Tester">User</option>
           </select>
           <select

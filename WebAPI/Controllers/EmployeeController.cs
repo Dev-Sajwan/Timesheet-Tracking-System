@@ -1,8 +1,8 @@
 ﻿using Application.DTOs;
 using Application.Interfaces;
-using Application.Services;
 using AutoMapper;
 using Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers
@@ -16,7 +16,11 @@ namespace WebAPI.Controllers
         private readonly IAllocationService _allocationService;
         private readonly IMapper _mapper;
 
-        public EmployeesController(IEmployeeService employeeService, IProjectService projectService, IAllocationService allocationService, IMapper mapper)
+        public EmployeesController(
+            IEmployeeService employeeService,
+            IProjectService projectService,
+            IAllocationService allocationService,
+            IMapper mapper)
         {
             _employeeService = employeeService;
             _allocationService = allocationService;
@@ -24,7 +28,8 @@ namespace WebAPI.Controllers
             _mapper = mapper;
         }
 
-        // GET: api/employees/{id}
+        // ---------------- CRUD endpoints ----------------
+
         [HttpGet("{email}")]
         public async Task<ActionResult<EmployeeDto>> GetByEmail(string email)
         {
@@ -34,7 +39,6 @@ namespace WebAPI.Controllers
             return Ok(_mapper.Map<EmployeeDto>(employee));
         }
 
-        // GET: api/employees
         [HttpGet]
         public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetAll()
         {
@@ -42,22 +46,17 @@ namespace WebAPI.Controllers
             return Ok(_mapper.Map<IEnumerable<EmployeeDto>>(employees));
         }
 
-        // POST: api/employees
-
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] EmployeeDto dto)
         {
-
             var entity = _mapper.Map<Employee>(dto);
             entity.Id = Guid.NewGuid().ToString();
             await _employeeService.AddAsync(entity);
-            return CreatedAtAction(nameof(GetByEmail), new { email = entity.Email}, dto);
+            return CreatedAtAction(nameof(GetByEmail), new { email = entity.Email }, dto);
         }
 
         [HttpPut("{projectId}/employees/{employeeId}")]
-        public async Task<IActionResult> AssignEmployeeToProject(
-    int projectId,
-    string employeeId)
+        public async Task<IActionResult> AssignEmployeeToProject(int projectId, string employeeId)
         {
             var project = await _projectService.GetByIdAsync(projectId);
             var employee = await _employeeService.GetByIdAsync(employeeId);
@@ -65,19 +64,13 @@ namespace WebAPI.Controllers
             if (project == null || employee == null)
                 return NotFound("Project or Employee not found");
 
-            var existingAllocation =
-                await _allocationService.GetByEmployeeAndProjectAsync(
-                    employeeId,
-                    projectId);
+            var existingAllocation = await _allocationService.GetByEmployeeAndProjectAsync(employeeId, projectId);
 
             if (existingAllocation != null)
             {
                 existingAllocation.StartDate = DateTime.UtcNow;
-
                 await _allocationService.UpdateAsync(existingAllocation);
-
-                return Ok(
-                    $"Employee {employee.Name} re-assigned to Project {project.ProjectName}");
+                return Ok($"Employee {employee.Name} re-assigned to Project {project.ProjectName}");
             }
 
             var allocation = new Allocation
@@ -88,14 +81,9 @@ namespace WebAPI.Controllers
             };
 
             await _allocationService.AddAsync(allocation);
-
-            return Ok(
-                $"Employee {employee.Name} assigned to Project {project.ProjectName}");
+            return Ok($"Employee {employee.Name} assigned to Project {project.ProjectName}");
         }
 
-
-
-        // PUT: api/employees/{id}
         [HttpPut("{email}")]
         public async Task<IActionResult> Update(string email, [FromBody] EmployeeDto dto)
         {
@@ -105,10 +93,9 @@ namespace WebAPI.Controllers
             var entity = _mapper.Map<Employee>(dto);
             await _employeeService.UpdateAsync(entity);
 
-            return Ok("Employee Updated successfully!");
+            return Ok("Employee updated successfully!");
         }
 
-        // DELETE: api/employees/{id}
         [HttpDelete("{email}")]
         public async Task<IActionResult> Delete(string email)
         {
@@ -116,28 +103,44 @@ namespace WebAPI.Controllers
             return Ok("User deleted successfully!");
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] CreateUserRequestDto request)
-        {
-            var user = await _employeeService.RegisterUser(request);
-            return Ok(new { Message = "User registered successfully", UserId = user.Id });
-        }
+        // ---------------- Identity-backed endpoints ----------------
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
-        {
-            var isValid = await _employeeService.Authenticate(request);
-            if (!isValid) return Unauthorized(new { Message = "Invalid credentials" });
+        //[HttpPost("register")]
+        //public async Task<IActionResult> Register([FromBody] CreateUserRequestDto request)
+        //{
+        //    try
+        //    {
+        //        var user = await _employeeService.RegisterUser(request);
+        //        return Ok(new { Message = "User registered successfully", UserId = user.Id });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { Message = ex.Message });
+        //    }
+        //}
 
-            return Ok(new { Message = "Login successful" });
-        }
+        //[HttpPost("login")]
+        //public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        //{
+        //    var isValid = await _employeeService.Authenticate(request);
+        //    if (!isValid) return Unauthorized(new { Message = "Invalid credentials" });
 
-        [HttpPost("assign-role")]
-        public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest request)
-        {
-            await _employeeService.AssignRole(request);
-            return Ok(new { Message = "Role assigned successfully" });
-        }
+        //    return Ok(new { Message = "Login successful" });
+        //}
 
+        //[HttpPost("assign-role")]
+        //[Authorize(Roles = "Admin")] // Only admins can assign roles
+        //public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest request)
+        //{
+        //    try
+        //    {
+        //        await _employeeService.AssignRole(request);
+        //        return Ok(new { Message = "Role assigned successfully" });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { Message = ex.Message });
+        //    }
+        //}
     }
 }
