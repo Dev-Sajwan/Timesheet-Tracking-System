@@ -5,8 +5,11 @@
         public string? Id { get; set; }
         public string Name { get; set; } = "";
         public string Email { get; set; } = "";
-        public string Role { get; set; } = "";
         public string Status { get; set; } = "";
+        public string Department { get; set; } = "";
+
+        // Role is retrieved from ASP.NET Core Identity, not stored in Employee table
+        public List<string> Roles { get; set; } = new();
     }
 
     public class CreateUserRequestDto
@@ -25,10 +28,19 @@
         public string Password { get; set; } = string.Empty;
     }
 
-    public class AssignRoleRequest
+public class AssignRoleRequest
     {
         public string EmployeeId { get; set; } = string.Empty;
         public string RoleName { get; set; } = string.Empty;
     }
 
+    public class ApproveTimesheetDto
+    {
+        public string ApprovalStatus { get; set; } = "Pending"; // "Approved" or "Rejected"
+    }
+
+    public class ResetPasswordDto
+    {
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }

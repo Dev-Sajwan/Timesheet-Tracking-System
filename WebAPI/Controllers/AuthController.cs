@@ -4,6 +4,10 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace WebAPI.Controllers
 {
@@ -15,36 +19,78 @@ namespace WebAPI.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IEmployeeRepository _employeeRepository;
+        private readonly IConfiguration _configuration;
 
         public AuthController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             RoleManager<IdentityRole> roleManager,
-            IEmployeeRepository employeeRepository)
+            IEmployeeRepository employeeRepository,
+            IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
             _employeeRepository = employeeRepository;
+            _configuration = configuration;
         }
 
         // Register new user + employee
         [HttpPost("register")]
+ 
         public async Task<IActionResult> Register([FromBody] CreateUserRequestDto request)
         {
-            var user = new ApplicationUser { UserName = request.UserName, Email = request.Email };
+            // 1. Validate required fields
+            if (string.IsNullOrWhiteSpace(request.UserName))
+                return BadRequest("UserName is required.");
+
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest("Email is required.");
+
+            if (string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest("Password is required.");
+
+            // 2. Clean up input
+            var userName = request.UserName.Trim();
+            var email = request.Email.Trim();
+
+            // 3. Create Identity user
+            var user = new ApplicationUser
+            {
+                UserName = userName,
+                Email = email
+            };
+
             var result = await _userManager.CreateAsync(user, request.Password);
 
-            if (string.IsNullOrWhiteSpace(request.UserName))
-                return BadRequest("UserName is required and must contain only letters or digits.");
-
+            // 4. Return the actual Identity errors
             if (!result.Succeeded)
-                return BadRequest(result.Errors);
+            {
+                return BadRequest(new
+                {
+                    Errors = result.Errors.Select(e => new
+                    {
+                        e.Code,
+                        e.Description
+                    })
+                });
+            }
 
+            // Assign Employee role
+            var roleResult = await _userManager.AddToRoleAsync(
+                user, "Employee");
+
+            if (!roleResult.Succeeded)
+            {
+                return BadRequest(roleResult.Errors);
+            }
+
+            // 5. Create Employee record
             var employee = new Employee
             {
                 Id = Guid.NewGuid().ToString(),
                 Name = request.FullName,
+                Email = request.Email,
                 Department = request.Department,
                 Status = "Active",
                 UserId = user.Id
@@ -52,38 +98,113 @@ namespace WebAPI.Controllers
 
             await _employeeRepository.AddAsync(employee);
 
-            return Ok(new { Message = "User registered successfully", EmployeeId = employee.Id, UserId = user.Id });
+            return Ok(new
+            {
+                Message = "User registered successfully",
+                EmployeeId = employee.Id,
+                UserId = user.Id,
+                UserName = user.UserName,
+                Email = user.Email
+            });
         }
 
         // Login
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var result = await _signInManager.PasswordSignInAsync(request.UserName, request.Password, false, false);
-
-            if (!result.Succeeded)
+            var user = await _userManager.FindByNameAsync(request.UserName);
+            if (user == null)
+            {
                 return Unauthorized(new { Message = "Invalid credentials" });
+            }
 
-            return Ok(new { Message = "Login successful" });
+            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
+            if (!result.Succeeded)
+            {
+                return Unauthorized(new { Message = "Invalid credentials" });
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var authClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("uid", user.Id)
+            };
+
+            var employee = await _employeeRepository.GetByUserIdAsync(user.Id);
+            if (employee != null)
+            {
+                authClaims.Add(new Claim("employeeId", employee.Id));
+                authClaims.Add(new Claim("fullName", employee.Name));
+            }
+
+            foreach (var role in roles)
+            {
+                authClaims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Secret"]));
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:ValidIssuer"],
+                audience: _configuration["Jwt:ValidAudience"],
+                expires: DateTime.Now.AddHours(3),
+                claims: authClaims,
+                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+            );
+
+            return Ok(new
+            {
+                Token = new JwtSecurityTokenHandler().WriteToken(token),
+                Expiration = token.ValidTo,
+                Roles = roles
+            });
         }
 
         // Assign role
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("assign-role")]
-        [Authorize(Roles = "Admin")] // Only admins can assign roles
-        public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest request)
+        public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequestDto request)
         {
-            var user = await _userManager.FindByIdAsync(request.EmployeeId);
-            if (user == null) return NotFound("User not found");
+            var user = await _userManager.FindByIdAsync(request.UserId);
 
-            if (!await _roleManager.RoleExistsAsync(request.RoleName))
-                return BadRequest("Role does not exist");
+            if (user == null)
+                return NotFound("User not found.");
 
-            var result = await _userManager.AddToRoleAsync(user, request.RoleName);
+            var allowedRoles = new[] { "Admin", "Manager", "Employee" };
+
+            if (!allowedRoles.Contains(
+                request.Role,
+                StringComparer.OrdinalIgnoreCase))
+            {
+                return BadRequest("Invalid role.");
+            }
+
+            // Find the existing role
+            var role = allowedRoles.First(r =>
+                r.Equals(request.Role, StringComparison.OrdinalIgnoreCase));
+
+            if (!await _roleManager.RoleExistsAsync(role))
+                return BadRequest("Role does not exist.");
+
+            // Avoid assigning the same role twice
+            if (await _userManager.IsInRoleAsync(user, role))
+                return BadRequest("User already has this role.");
+
+            var result = await _userManager.AddToRoleAsync(user, role);
+
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
 
-            return Ok(new { Message = $"Role '{request.RoleName}' assigned to user {user.UserName}" });
+            return Ok(new
+            {
+                Message = $"Role '{role}' assigned successfully.",
+                UserId = user.Id,
+                UserName = user.UserName,
+                Role = role
+            });
         }
     }
 }

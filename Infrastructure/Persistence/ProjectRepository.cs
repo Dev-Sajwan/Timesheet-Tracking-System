@@ -52,5 +52,11 @@ namespace Infrastructure.Persistence
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task<bool> ExistsByNameAsync(string projectName)
+        {
+            return await _context.Projects
+                .AnyAsync(p => p.ProjectName == projectName);
+        }
     }
 }

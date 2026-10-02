@@ -47,9 +47,25 @@ namespace WebAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] ProjectDto dto)
         {
+            if (string.IsNullOrWhiteSpace(dto.ProjectName))
+                return BadRequest("Project name is required.");
+
+            // Check for duplicate project
+            var exists = await _projectService.ExistsByNameAsync(dto.ProjectName.Trim());
+
+            if (exists)
+                return Conflict("A project with this name already exists.");
+
             var entity = _mapper.Map<Project>(dto);
+
+            entity.ProjectName = dto.ProjectName.Trim();
+
             await _projectService.AddAsync(entity);
-            return CreatedAtAction(nameof(GetById), new { id = entity.ProjectId }, dto);
+
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = entity.ProjectId },
+                entity);
         }
 
 

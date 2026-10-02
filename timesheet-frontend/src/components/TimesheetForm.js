@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import {
   getEmployees,
   getProjects,
-  getAllocations,   // <-- NEW
+  getAllocations,
   getAllTimesheets,
   submitTimesheet,
   getBenchHours,
-  addBenchHour
+  addBenchHour,
+  approveTimesheet
 } from "../Services/Api";
 
-export default function Timesheets() {
+export default function Timesheets({ employeeId, onSubmitted }) {
   const getTodayDate = () => {
   const today = new Date();
   const year = today.getFullYear();
@@ -42,6 +43,13 @@ export default function Timesheets() {
     loadTimesheets();
     loadBenchHours();
   }, []);
+
+  useEffect(() => {
+    // If employeeId is passed down, automatically set it
+    if (employeeId && allocations.length > 0 && projects.length > 0) {
+      handleEmployeeChange(employeeId);
+    }
+  }, [employeeId, allocations, projects]);
 
   const loadEmployees = async () => {
     const res = await getEmployees();
@@ -152,7 +160,7 @@ export default function Timesheets() {
     }
 
     setNewTimesheet({
-      employeeId: "",
+      employeeId: employeeId || "",
       entryType: "Project",
       projectId: "",
       date: getTodayDate(),
@@ -160,8 +168,11 @@ export default function Timesheets() {
       description: ""
     });
 
-    setFilteredProjects([]);
+    if (!employeeId) {
+      setFilteredProjects([]);
+    }
     setTimesheetError("");
+    if (onSubmitted) onSubmitted();
   } catch (error) {
     const validationErrors = error.response?.data?.errors;
 
@@ -216,22 +227,26 @@ const filteredBenchHours = benchHours.filter((bench) => {
 const displayEntries = [
   ...filteredTimesheets.map((ts) => ({
     id: `timesheet-${ts.timesheetId}`,
+    actualId: ts.timesheetId,
     type: "Project",
     employeeId: ts.employeeId,
     projectId: ts.projectId,
     date: ts.date,
     hours: ts.hoursWorked,
     description: ts.entries?.[0]?.description || "",
+    status: ts.approvalStatus || "Pending"
   })),
 
   ...filteredBenchHours.map((bench) => ({
     id: `bench-${bench.benchHourId}`,
+    actualId: bench.benchHourId,
     type: "Bench",
     employeeId: bench.employeeId,
     projectId: null,
     date: bench.date,
     hours: bench.hours,
     description: bench.description || "",
+    status: "Approved" // Bench hours are automatically tracked (or N/A)
   })),
 ];
 
@@ -250,6 +265,7 @@ const displayEntries = [
       <table border="1" cellPadding="8" style={{ marginBottom: "20px", width: "100%" }}>
         <tbody>
           <tr>
+            {!employeeId && (
             <td>
               <label>Employee</label><br />
               <select
@@ -264,6 +280,7 @@ const displayEntries = [
                 ))}
               </select>
             </td>
+            )}
             <td>
               <label>Entry Type</label><br />
 
@@ -328,78 +345,104 @@ const displayEntries = [
         </tbody>
       </table>
 
-      {/* Filters */}
-      <h3>Filter Timesheets</h3>
-      <div style={{ marginBottom: "15px" }}>
-        <select
-          value={filters.employeeId}
-          onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
-        >
-          <option value="">Filter by Employee</option>
-          {employees.map((emp) => (
-            <option key={emp.id} value={emp.id}>
-              {emp.name}
-            </option>
-          ))}
-        </select>
+      {/* Filters & List only for non-employee views */}
+      {!employeeId && (
+        <>
+          {/* Filters */}
+          <h3>Filter Timesheets</h3>
+          <div style={{ marginBottom: "15px" }}>
+            <select
+              value={filters.employeeId}
+              onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
+            >
+              <option value="">Filter by Employee</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name}
+                </option>
+              ))}
+            </select>
 
-        <select
-          value={filters.projectId}
-          onChange={(e) => setFilters({ ...filters, projectId: e.target.value })}
-          style={{ marginLeft: "10px" }}
-        >
-          <option value="">Filter by Project</option>
-          {projects.map((proj) => (
-            <option key={proj.projectId} value={proj.projectId}>
-              {proj.projectName}
-            </option>
-          ))}
-        </select>
+            <select
+              value={filters.projectId}
+              onChange={(e) => setFilters({ ...filters, projectId: e.target.value })}
+              style={{ marginLeft: "10px" }}
+            >
+              <option value="">Filter by Project</option>
+              {projects.map((proj) => (
+                <option key={proj.projectId} value={proj.projectId}>
+                  {proj.projectName}
+                </option>
+              ))}
+            </select>
 
-        <input
-          type="date"
-          value={filters.date}
-          onChange={(e) => setFilters({ ...filters, date: e.target.value })}
-          style={{ marginLeft: "10px" }}
-        />
-      </div>
+            <input
+              type="date"
+              value={filters.date}
+              onChange={(e) => setFilters({ ...filters, date: e.target.value })}
+              style={{ marginLeft: "10px" }}
+            />
+          </div>
 
-      {/* Timesheet List */}
-      <table border="1" width="100%" cellPadding="8">
-        <thead>
-          <tr>
-            <th>Employee</th>
-            <th>Type</th>
-            <th>Project</th>
-            <th>Date</th>
-            <th>Hours</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-        {displayEntries.map((entry) => (
-          <tr key={entry.id}>
-            <td>
-              {employees.find(
-                (e) => String(e.id) === String(entry.employeeId)
-              )?.name || entry.employeeId}
-            </td>
-            <td>{entry.type}</td>
-            <td>
-              {entry.projectId
-                ? projects.find(
-                    (p) =>
-                      Number(p.projectId) === Number(entry.projectId)
-                  )?.projectName || entry.projectId
-                : "—"}
-            </td>
-            <td>{formatDate(entry.date)}</td>
-            <td>{entry.hours} hr</td>
-            <td>{entry.description}</td>
-          </tr>
-        ))}
-      </tbody>
-      </table>
+          {/* Timesheet List */}
+          <table border="1" width="100%" cellPadding="8">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Type</th>
+                <th>Project</th>
+                <th>Date</th>
+                <th>Hours</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+            {displayEntries.map((entry) => (
+              <tr key={entry.id}>
+                <td>
+                  {employees.find(
+                    (e) => String(e.id) === String(entry.employeeId)
+                  )?.name || entry.employeeId}
+                </td>
+                <td>{entry.type}</td>
+                <td>
+                  {entry.projectId
+                    ? projects.find(
+                        (p) =>
+                          Number(p.projectId) === Number(entry.projectId)
+                      )?.projectName || entry.projectId
+                    : "—"}
+                </td>
+                <td>{formatDate(entry.date)}</td>
+                <td>{entry.hours} hr</td>
+                <td>{entry.description}</td>
+                <td>{entry.status}</td>
+                <td>
+                  {entry.type === "Project" && entry.status === "Pending" && (
+                    <div style={{ display: "flex", gap: "5px" }}>
+                      <button onClick={async () => {
+                        if(window.confirm("Approve timesheet?")) {
+                          await approveTimesheet(entry.actualId, "Approved");
+                          loadTimesheets();
+                        }
+                      }}>Approve</button>
+                      <button onClick={async () => {
+                        if(window.confirm("Reject timesheet?")) {
+                          await approveTimesheet(entry.actualId, "Rejected");
+                          loadTimesheets();
+                        }
+                      }} style={{ background: "#e74c3c" }}>Reject</button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          </table>
+        </>
+      )}
     </div>
   );
 }

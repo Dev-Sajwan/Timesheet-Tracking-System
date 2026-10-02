@@ -5,6 +5,7 @@ namespace Application.Interfaces
     public interface IEmployeeRepository
     {
         Task<Employee?> GetByIdAsync(string id);
+        Task<Employee?> GetByUserIdAsync(string userId);
         Task<Employee?> GetByEmailAsync(string email);
         Task<IEnumerable<Employee>> GetAllAsync();
         Task AddAsync(Employee employee);

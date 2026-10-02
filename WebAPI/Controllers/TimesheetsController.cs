@@ -3,6 +3,7 @@ using Application.Interfaces;
 using Application.Services;
 using AutoMapper;
 using Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers
@@ -64,6 +65,29 @@ namespace WebAPI.Controllers
         {
             await _timesheetService.DeleteAsync(id);
             return Ok("Timesheet deleted successfully!");
+        }
+
+        // PUT: api/timesheets/approve/{id}
+        [HttpPut("approve/{id}")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> Approve(int id, [FromBody] ApproveTimesheetDto dto)
+        {
+            var timesheet = await _timesheetService.GetByIdAsync(id);
+            if (timesheet == null) 
+                    return NotFound("Timesheet not found.");
+
+            timesheet.Approvals ??= new List<Approval>();
+            timesheet.ApprovalStatus = dto.ApprovalStatus; // "Approved" or "Rejected"
+            timesheet.Approvals.Add(new Approval
+            {
+                TimesheetId = id,
+                ApprovedBy = User.FindFirst("uid")?.Value ?? "Unknown",
+                ApprovalDate = DateTime.UtcNow,
+                ApprovalType = dto.ApprovalStatus
+            });
+            
+            await _timesheetService.UpdateAsync(timesheet);
+            return Ok(new { Message = $"Timesheet {dto.ApprovalStatus.ToLower()}" });
         }
 
         // Helper mapping methods

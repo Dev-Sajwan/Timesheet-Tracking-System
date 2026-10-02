@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Services
 {
@@ -26,5 +27,10 @@ namespace Application.Services
 
         public async Task DeleteAsync(int id) =>
             await _projectRepository.DeleteAsync(id);
+
+        public async Task<bool> ExistsByNameAsync(string projectName) =>
+            await _projectRepository.ExistsByNameAsync(projectName);
+
+
     }
 }

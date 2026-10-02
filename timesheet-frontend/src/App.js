@@ -1,41 +1,60 @@
-import React, { useState } from "react";
-import EmployeeList from "./components/EmployeeList";
-import ProjectList from "./components/ProjectList";
-import AllocationList from "./components/AllocationList";
-import TimesheetForm from "./components/TimesheetForm";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
+import Login from "./components/Login";
+import EmployeeDashboard from "./components/EmployeeDashboard";
+import ManagerDashboard from "./components/ManagerDashboard";
+import AdminDashboard from "./components/AdminDashboard";
+
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const token = localStorage.getItem("token");
+  if (!token) return <Navigate to="/" />;
+
+  try {
+    const decoded = jwtDecode(token);
+    const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
+    
+    // Ensure userRoles is an array for checking
+    const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
+
+    const hasRole = allowedRoles.some((r) => rolesArray.includes(r));
+
+    if (!hasRole) {
+      return <Navigate to="/" />;
+    }
+
+    return children;
+  } catch (error) {
+    localStorage.removeItem("token");
+    return <Navigate to="/" />;
+  }
+};
 
 function App() {
-  const [activeTab, setActiveTab] = useState("employees");
-
   return (
-    <div style={{ display: "flex", height: "100vh", fontFamily: "Arial, sans-serif" }}>
-      {/* Sidebar */}
-      <div style={{ width: "220px", background: "#2c3e50", color: "#ecf0f1", padding: "20px" }}>
-        <h2 style={{ textAlign: "center" }}>Dashboard</h2>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          <li style={{ margin: "15px 0", cursor: "pointer" }} onClick={() => setActiveTab("employees")}>
-            👤 Employees
-          </li>
-          <li style={{ margin: "15px 0", cursor: "pointer" }} onClick={() => setActiveTab("projects")}>
-            📂 Projects
-          </li>
-          <li style={{ margin: "15px 0", cursor: "pointer" }} onClick={() => setActiveTab("allocations")}>
-            📊 Allocations
-          </li>
-          <li style={{ margin: "15px 0", cursor: "pointer" }} onClick={() => setActiveTab("timesheets")}>
-            🕒 Timesheets
-          </li>
-        </ul>
-      </div>
-
-      {/* Main Content */}
-      <div style={{ flex: 1, padding: "30px", background: "#ecf0f1" }}>
-        {activeTab === "employees" && <EmployeeList />}
-        {activeTab === "projects" && <ProjectList />}
-        {activeTab === "allocations" && <AllocationList />}
-        {activeTab === "timesheets" && <TimesheetForm />}
-      </div>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        
+        <Route path="/employee" element={
+          <ProtectedRoute allowedRoles={["Employee", "Manager", "Admin"]}>
+            <EmployeeDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/manager" element={
+          <ProtectedRoute allowedRoles={["Manager", "Admin"]}>
+            <ManagerDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={["Admin"]}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+      </Routes>
+    </Router>
   );
 }
 

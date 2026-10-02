@@ -17,11 +17,15 @@ public class EmployeeRepository : IEmployeeRepository
             .Include(e => e.Timesheets)
             .FirstOrDefaultAsync(e => e.Id == id);
 
+    public async Task<Employee?> GetByUserIdAsync(string userId) =>
+        await _context.Employees
+            .FirstOrDefaultAsync(e => e.UserId == userId);
+
     public async Task<Employee?> GetByEmailAsync(string email) =>
         await _context.Employees
-            .Include(e => e.Allocations)
-            .Include(e => e.Timesheets)
-            .FirstOrDefaultAsync(e => e.User != null && e.User.Email == email);
+            //.Include(e => e.Allocations)
+            //.Include(e => e.Timesheets)
+            .FirstOrDefaultAsync(e => e.Email != null && e.Email == email);
 
     public async Task<IEnumerable<Employee>> GetAllAsync() =>
         await _context.Employees

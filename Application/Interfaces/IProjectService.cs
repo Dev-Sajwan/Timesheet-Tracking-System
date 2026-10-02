@@ -9,5 +9,6 @@ namespace Application.Interfaces
         Task AddAsync(Project project);
         Task UpdateAsync(Project project);
         Task DeleteAsync(int id);
+        Task<bool> ExistsByNameAsync(string projectName);
     }
 }

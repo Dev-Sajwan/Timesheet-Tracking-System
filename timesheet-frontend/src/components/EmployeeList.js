@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { getEmployees, addEmployee, updateEmployee, getProjects, getClients } from "../Services/Api";
+import { getEmployees, addEmployee, updateEmployee, getProjects, getClients, getEmployeeRoles, assignEmployeeRole, resetEmployeePassword } from "../Services/Api";
+import { jwtDecode } from "jwt-decode";
 
 export default function EmployeeList() {
   const [employees, setEmployees] = useState([]);
@@ -13,17 +14,37 @@ export default function EmployeeList() {
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     email: "",
-    Role: "",
-    Status: ""
+    department: "",
+    status: ""
   });
+  const [assigningRole, setAssigningRole] = useState(null);
+  const [selectedRole, setSelectedRole] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(null);
+  const [newPassword, setNewPassword] = useState("");
 
   const employeesPerPage = 8;
 
   useEffect(() => {
+    checkAdminRole();
     loadEmployees();
     loadProjects();
     loadClients();
   }, []);
+
+  const checkAdminRole = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
+        const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
+        setIsAdmin(rolesArray.includes("Admin"));
+      } catch (e) {
+        setIsAdmin(false);
+      }
+    }
+  };
 
   const loadEmployees = async () => {
     const res = await getEmployees();
@@ -42,15 +63,65 @@ export default function EmployeeList() {
 
   const handleAddEmployee = async () => {
     await addEmployee(newEmployee);
-    setNewEmployee({ name: "", email: "", Role: "", Status: "" });
+    setNewEmployee({ name: "", email: "", department: "", status: "" });
     setShowForm(false);
     loadEmployees();
   };
 
   const handleUpdateEmployee = async () => {
-    await updateEmployee(editingEmployee.employeeId, editingEmployee);
+    // Only send allowed fields for profile update (not Roles)
+    const updateData = {
+      id: editingEmployee.id,
+      name: editingEmployee.name,
+      email: editingEmployee.email,
+      department: editingEmployee.department || "",
+      status: editingEmployee.status
+    };
+    await updateEmployee(editingEmployee.id, updateData);
     setEditingEmployee(null);
     loadEmployees();
+  };
+
+  const handleAssignRole = async (employeeId, role) => {
+    try {
+      await assignEmployeeRole(employeeId, role);
+      setAssigningRole(null);
+      setSelectedRole("");
+      loadEmployees();
+    } catch (error) {
+      alert("Failed to assign role: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleResetPassword = async (employeeId, password) => {
+    try {
+      await resetEmployeePassword(employeeId, password);
+      setResettingPassword(null);
+      setNewPassword("");
+      alert("Password reset successfully!");
+    } catch (error) {
+      alert("Failed to reset password: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const openResetPassword = (emp) => {
+    setResettingPassword(emp.id);
+    setNewPassword("");
+  };
+
+  const closeResetPassword = () => {
+    setResettingPassword(null);
+    setNewPassword("");
+  };
+
+  const openAssignRole = (emp) => {
+    setAssigningRole(emp.id);
+    setSelectedRole(emp.Roles?.[0] || "");
+  };
+
+  const closeAssignRole = () => {
+    setAssigningRole(null);
+    setSelectedRole("");
   };
 
   // Filter employees by search term
@@ -65,6 +136,11 @@ export default function EmployeeList() {
   const indexOfFirstEmployee = indexOfLastEmployee - employeesPerPage;
   const currentEmployees = filteredEmployees.slice(indexOfFirstEmployee, indexOfLastEmployee);
   const totalPages = Math.ceil(filteredEmployees.length / employeesPerPage);
+
+  const formatRoles = (roles) => {
+    if (!roles || roles.length === 0) return "No roles";
+    return roles.join(", ");
+  };
 
   return (
     <div style={{ padding: "20px" }}>
@@ -90,19 +166,15 @@ export default function EmployeeList() {
             onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
             style={{ marginRight: "5px" }}
           />
-          <select
-            value={newEmployee.Role}
-            onChange={(e) => setNewEmployee({ ...newEmployee, Role: e.target.value })}
+          <input
+            placeholder="Department"
+            value={newEmployee.department}
+            onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
             style={{ marginRight: "5px" }}
-          >
-           <option value="">Select Role</option>
-            <option value="Manager">Manager</option>
-            <option value="Admin">Admin</option>
-            <option value="Tester">User</option>
-          </select>
+          />
           <select
-            value={newEmployee.Status}
-            onChange={(e) => setNewEmployee({ ...newEmployee, Status: e.target.value })}
+            value={newEmployee.status}
+            onChange={(e) => setNewEmployee({ ...newEmployee, status: e.target.value })}
             style={{ marginRight: "5px" }}
           >
             <option value="">Select Status</option>
@@ -112,9 +184,6 @@ export default function EmployeeList() {
           <button onClick={handleAddEmployee}>Save Employee</button>
         </div>
       )}
-
-      {/* Search Bar */}
-      
 
       {/* Search Bar */}
       <input
@@ -134,17 +203,60 @@ export default function EmployeeList() {
           <tr>
             <th>Name</th>
             <th>Email</th>
+            <th>Roles</th>
+            <th>Status</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {currentEmployees.map((emp) => (
-            <tr key={emp.employeeId}>
+            <tr key={emp.id}>
               <td>{emp.name}</td>
               <td>{emp.email}</td>
+              <td>{formatRoles(emp.Roles)}</td>
+              <td>{emp.status}</td>
               <td>
                 <button onClick={() => setSelectedEmployee(emp)}>View</button>&nbsp;
                 <button onClick={() => setEditingEmployee(emp)}>Edit</button>
+                {isAdmin && (
+                  <>
+                    &nbsp;
+                    {assigningRole === emp.id ? (
+                      <>
+                        <select
+                          value={selectedRole}
+                          onChange={(e) => setSelectedRole(e.target.value)}
+                          style={{ marginRight: "5px" }}
+                        >
+                          <option value="">Select Role</option>
+                          <option value="Admin">Admin</option>
+                          <option value="Manager">Manager</option>
+                          <option value="Employee">Employee</option>
+                        </select>
+                        <button onClick={() => handleAssignRole(emp.id, selectedRole)} style={{ marginRight: "5px" }}>Assign</button>
+                        <button onClick={closeAssignRole}>Cancel</button>
+                      </>
+                    ) : (
+                      <button onClick={() => openAssignRole(emp)}>Assign Role</button>
+                    )}
+                    &nbsp;
+                    {resettingPassword === emp.id ? (
+                      <>
+                        <input
+                          type="password"
+                          placeholder="New Password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          style={{ marginRight: "5px" }}
+                        />
+                        <button onClick={() => handleResetPassword(emp.id, newPassword)}>Reset</button>
+                        <button onClick={closeResetPassword}>Cancel</button>
+                      </>
+                    ) : (
+                      <button onClick={() => openResetPassword(emp)}>Reset Password</button>
+                    )}
+                  </>
+                )}
               </td>
             </tr>
           ))}
@@ -168,9 +280,9 @@ export default function EmployeeList() {
           <h3>Employee Details</h3>
           <p><strong>Name:</strong> {selectedEmployee.name}</p>
           <p><strong>Email:</strong> {selectedEmployee.email}</p>
-          <p><strong>Role:</strong> {selectedEmployee.role}</p>
+          <p><strong>Roles:</strong> {formatRoles(selectedEmployee.Roles)}</p>
           <p><strong>Status:</strong> {selectedEmployee.status}</p>
-          {/* <p><strong>Client:</strong> {clients.find(c => c.clientId === selectedEmployee.clientId)?.clientName}</p> */}
+          <p><strong>Department:</strong> {selectedEmployee.department || "N/A"}</p>
           <button onClick={() => setSelectedEmployee(null)}>Close</button>
         </div>
       )}
@@ -191,16 +303,12 @@ export default function EmployeeList() {
             onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
             style={{ marginRight: "5px" }}
           />
-          <select
-            value={editingEmployee.role || ""}
-            onChange={(e) => setEditingEmployee({ ...editingEmployee, role: e.target.value })}
+          <input
+            placeholder="Department"
+            value={editingEmployee.department || ""}
+            onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
             style={{ marginRight: "5px" }}
-          >
-            <option value="">Role</option>
-            <option value="Manager">Manager</option>
-            <option value="Developer">Developer</option>
-            <option value="Tester">User</option>
-          </select>
+          />
           <select
             value={editingEmployee.status || ""}
             onChange={(e) => setEditingEmployee({ ...editingEmployee, status: e.target.value })}
@@ -210,6 +318,7 @@ export default function EmployeeList() {
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
           </select>
+          <p><em>Roles are managed separately via "Assign Role" button (Admin only)</em></p>
           <button onClick={handleUpdateEmployee} style={{ marginRight: "5px" }}>Update Employee</button>
           <button onClick={() => setEditingEmployee(null)}>Cancel</button>
         </div>

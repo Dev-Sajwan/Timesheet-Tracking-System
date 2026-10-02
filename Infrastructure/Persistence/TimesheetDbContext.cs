@@ -2,6 +2,7 @@
 using Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace Infrastructure.Persistence
 {
@@ -27,6 +28,10 @@ namespace Infrastructure.Persistence
                 .HasOne(e => e.User)
                 .WithOne()
                 .HasForeignKey<Employee>(e => e.UserId);
+
+            builder.Entity<Project>()
+                .HasIndex(p => new { p.ClientId, p.ProjectName })
+                .IsUnique();
         }
     }
 }
