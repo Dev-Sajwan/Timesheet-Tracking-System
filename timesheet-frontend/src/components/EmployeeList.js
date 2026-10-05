@@ -213,7 +213,7 @@ export default function EmployeeList() {
             <tr key={emp.id}>
               <td>{emp.name}</td>
               <td>{emp.email}</td>
-              <td>{formatRoles(emp.Roles)}</td>
+              <td>{formatRoles(emp.roles)}</td>
               <td>{emp.status}</td>
               <td>
                 <button onClick={() => setSelectedEmployee(emp)}>View</button>&nbsp;
@@ -280,7 +280,7 @@ export default function EmployeeList() {
           <h3>Employee Details</h3>
           <p><strong>Name:</strong> {selectedEmployee.name}</p>
           <p><strong>Email:</strong> {selectedEmployee.email}</p>
-          <p><strong>Roles:</strong> {formatRoles(selectedEmployee.Roles)}</p>
+          <p><strong>Roles:</strong> {formatRoles(selectedEmployee.roles)}</p>
           <p><strong>Status:</strong> {selectedEmployee.status}</p>
           <p><strong>Department:</strong> {selectedEmployee.department || "N/A"}</p>
           <button onClick={() => setSelectedEmployee(null)}>Close</button>
