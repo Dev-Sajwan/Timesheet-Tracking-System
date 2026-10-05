@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getEmployees, addEmployee, updateEmployee, getProjects, getClients, getEmployeeRoles, assignEmployeeRole, resetEmployeePassword } from "../Services/Api";
+import { getEmployees, addEmployee, updateEmployee, getProjects, getClients, assignEmployeeRole, resetEmployeePassword } from "../Services/Api";
 import { jwtDecode } from "jwt-decode";
 
 export default function EmployeeList() {

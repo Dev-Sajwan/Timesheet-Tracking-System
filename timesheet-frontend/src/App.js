@@ -2,6 +2,9 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import Login from "./components/Login";
+// import Register from "./components/Register";
+import ForgotPassword from "./components/ForgotPassword";
+import ResetPassword from "./components/ResetPassword";
 import EmployeeDashboard from "./components/EmployeeDashboard";
 import ManagerDashboard from "./components/ManagerDashboard";
 import AdminDashboard from "./components/AdminDashboard";
@@ -34,8 +37,13 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<Login />} />
+        {/* <Route path="/register" element={<Register />} /> */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         
+        {/* Protected routes */}
         <Route path="/employee" element={
           <ProtectedRoute allowedRoles={["Employee", "Manager", "Admin"]}>
             <EmployeeDashboard />
