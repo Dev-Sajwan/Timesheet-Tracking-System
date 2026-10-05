@@ -21,7 +21,7 @@ export const resetPassword = (data) => API.post("/auth/reset-password", data);
 
 // Timesheets
 export const submitTimesheet = (data) => API.post("/timesheets", data);
-export const getTimesheetsByEmployee = (id) => API.get(`/timesheets/${id}`);
+export const getTimesheetsByEmployee = (employeeId) => API.get(`/timesheets/employee/${employeeId}`);
 export const getAllTimesheets = () => API.get("/timesheets");
 export const approveTimesheet = (id, status) => API.put(`/timesheets/approve/${id}`, { approvalStatus: status });
 export const deleteTimesheet = (id) => API.delete(`/timesheets/${id}`);
@@ -48,6 +48,7 @@ export const deleteProject = (id) => API.delete(`/projects/${id}`);
 // Allocations
 export const addAllocation = (data) => API.post("/allocations", data);
 export const getAllocations = () => API.get("/allocations");
+export const getAllocationsByEmployee = (employeeId) => API.get(`/allocations/employee/${employeeId}`);
 export const deleteAllocation = (id) => API.delete(`/allocations/${id}`);
 
 // BenchHours
@@ -65,6 +66,7 @@ export const getLeaveRecords = () => API.get("/leaverecords");
 // Holidays
 export const addHoliday = (data) => API.post("/holidays", data);
 export const getHolidays = () => API.get("/holidays");
+export const deleteHoliday = (id) => API.delete(`/holidays/${id}`);
 
 // Approvals
 export const addApproval = (data) => API.post("/approvals", data);

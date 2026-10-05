@@ -25,6 +25,11 @@ namespace Application.Services
             return await _timesheetRepository.GetByEmployeeAndWeekAsync(employeeId, weekStart);
         }
 
+        public async Task<IEnumerable<Timesheet>> GetByEmployeeAsync(string employeeId)
+        {
+            return await _timesheetRepository.GetByEmployeeAsync(employeeId);
+        }
+
         public async Task AddAsync(Timesheet timesheet)
         {
             ValidateTimesheet(timesheet);

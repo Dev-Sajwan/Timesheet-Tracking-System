@@ -125,34 +125,7 @@ namespace WebAPI.Controllers
             });
         }
 
-        [HttpPut("{projectId}/employees/{employeeId}")]
-        public async Task<IActionResult> AssignEmployeeToProject(int projectId, string employeeId)
-        {
-            var project = await _projectService.GetByIdAsync(projectId);
-            var employee = await _employeeService.GetByIdAsync(employeeId);
-
-            if (project == null || employee == null)
-                return NotFound("Project or Employee not found");
-
-            var existingAllocation = await _allocationService.GetByEmployeeAndProjectAsync(employeeId, projectId);
-
-            if (existingAllocation != null)
-            {
-                existingAllocation.StartDate = DateTime.UtcNow;
-                await _allocationService.UpdateAsync(existingAllocation);
-                return Ok($"Employee {employee.Name} re-assigned to Project {project.ProjectName}");
-            }
-
-            var allocation = new Allocation
-            {
-                EmployeeId = employeeId,
-                ProjectId = projectId,
-                StartDate = DateTime.UtcNow
-            };
-
-            await _allocationService.AddAsync(allocation);
-            return Ok($"Employee {employee.Name} assigned to Project {project.ProjectName}");
-        }
+        
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] EmployeeDto dto)

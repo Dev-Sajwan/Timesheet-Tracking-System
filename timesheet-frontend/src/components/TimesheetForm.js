@@ -5,8 +5,6 @@ import {
   getAllocations,
   getAllTimesheets,
   submitTimesheet,
-  getBenchHours,
-  addBenchHour,
   approveTimesheet
 } from "../Services/Api";
 
@@ -25,23 +23,20 @@ export default function Timesheets({ employeeId, onSubmitted }) {
   const [timesheets, setTimesheets] = useState([]);
   const [timesheetError, setTimesheetError] = useState("");
   const [filteredProjects, setFilteredProjects] = useState([]);
-  const [benchHours, setBenchHours] = useState([]);
   const [filters, setFilters] = useState({ employeeId: "", projectId: "", date: "" });
   const [newTimesheet, setNewTimesheet] = useState({
     employeeId: "",
-    entryType: "Project",
     projectId: "",
     date: getTodayDate(),
     hours: "",
     description: ""
   });
 
-  useEffect(() => {
+useEffect(() => {
     loadEmployees();
     loadProjects();
     loadAllocations();   // NEW
     loadTimesheets();
-    loadBenchHours();
   }, []);
 
   useEffect(() => {
@@ -80,15 +75,6 @@ export default function Timesheets({ employeeId, onSubmitted }) {
     }
   };
 
-  const loadBenchHours = async () => {
-    try {
-      const res = await getBenchHours();
-      setBenchHours(res.data);
-    } catch (error) {
-      setTimesheetError("Unable to load bench hours.");
-    }
-  };
-
   const handleEmployeeChange = (employeeId) => {
     setNewTimesheet({ ...newTimesheet, employeeId, projectId: "" });
 
@@ -113,77 +99,64 @@ export default function Timesheets({ employeeId, onSubmitted }) {
       return;
     }
 
-      if (
-        newTimesheet.entryType === "Project" &&
-        !newTimesheet.projectId
-      ) {
-        setTimesheetError("Please select a project.");
-        return;
-      }
+    if (!newTimesheet.projectId) {
+      setTimesheetError("Please select a project.");
+      return;
+    }
 
-        // const entryDate = new Date(
-        //   `${newTimesheet.date}T00:00:00`
-        // ).toISOString();  // Convert to ISO format for backend
-        const entryDate = newTimesheet.date;
-        
+    const entryDate = newTimesheet.date;
+    
+    // Check if hours exceed 8 (comp-off threshold)
+    const isCompOff = hoursWorked > 8;
+    const compOffHours = isCompOff ? hoursWorked - 8 : 0;
+    const approvalStatus = isCompOff ? "Pending" : "Pending"; // All timesheets need approval, but comp-off flagged
+
     try {
-    if (newTimesheet.entryType === "Bench") {
-      await addBenchHour({
-        employeeId,
-        date: entryDate,
-        hours: hoursWorked,
-        description: newTimesheet.description
-      });
-
-      await loadBenchHours();
-    } else {
       await submitTimesheet({
         employeeId,
         projectId,
         date: entryDate,
         hoursWorked,
         submissionType: "Daily",
-        approvalStatus: "Pending",
+        approvalStatus: approvalStatus,
         weekStartDate: entryDate,
         weekEndDate: entryDate,
         entries: [
           {
             date: entryDate,
             hours: hoursWorked,
-            description: newTimesheet.description
+            description: newTimesheet.description + (isCompOff ? ` [Comp-off: ${compOffHours} hrs]` : "")
           }
         ],
         approvals: []
       });
 
       await loadTimesheets();
+
+      setNewTimesheet({
+        employeeId: employeeId || "",
+        projectId: "",
+        date: getTodayDate(),
+        hours: "",
+        description: ""
+      });
+
+      if (!employeeId) {
+        setFilteredProjects([]);
+      }
+      setTimesheetError("");
+      if (onSubmitted) onSubmitted();
+    } catch (error) {
+      const validationErrors = error.response?.data?.errors;
+
+      const message = validationErrors
+        ? Object.values(validationErrors).flat().join(" ")
+        : error.response?.data?.title ||
+          "Unable to submit entry.";
+
+      setTimesheetError(message);
     }
-
-    setNewTimesheet({
-      employeeId: employeeId || "",
-      entryType: "Project",
-      projectId: "",
-      date: getTodayDate(),
-      hours: "",
-      description: ""
-    });
-
-    if (!employeeId) {
-      setFilteredProjects([]);
-    }
-    setTimesheetError("");
-    if (onSubmitted) onSubmitted();
-  } catch (error) {
-    const validationErrors = error.response?.data?.errors;
-
-    const message = validationErrors
-      ? Object.values(validationErrors).flat().join(" ")
-      : error.response?.data?.title ||
-        "Unable to submit entry.";
-
-    setTimesheetError(message);
-  }
-};
+  };
 
   // ✅ Apply filters correctly
   // Format dates consistently
@@ -198,7 +171,6 @@ const formatDate = (dateStr) => {
   // For ISO datetime values, use the date portion
   return dateStr.substring(0, 10);
 };
-
 // Filter project timesheets
 const filteredTimesheets = timesheets.filter((ts) => {
   return (
@@ -211,44 +183,18 @@ const filteredTimesheets = timesheets.filter((ts) => {
   );
 });
 
-
-
-const filteredBenchHours = benchHours.filter((bench) => {
-  return (
-    (!filters.employeeId ||
-      String(bench.employeeId) === String(filters.employeeId)) &&
-    !filters.projectId &&
-    (!filters.date ||
-      formatDate(bench.date) === filters.date)
-  );
-});
-
-// Combine project timesheets and bench hours
-const displayEntries = [
-  ...filteredTimesheets.map((ts) => ({
-    id: `timesheet-${ts.timesheetId}`,
-    actualId: ts.timesheetId,
-    type: "Project",
-    employeeId: ts.employeeId,
-    projectId: ts.projectId,
-    date: ts.date,
-    hours: ts.hoursWorked,
-    description: ts.entries?.[0]?.description || "",
-    status: ts.approvalStatus || "Pending"
-  })),
-
-  ...filteredBenchHours.map((bench) => ({
-    id: `bench-${bench.benchHourId}`,
-    actualId: bench.benchHourId,
-    type: "Bench",
-    employeeId: bench.employeeId,
-    projectId: null,
-    date: bench.date,
-    hours: bench.hours,
-    description: bench.description || "",
-    status: "Approved" // Bench hours are automatically tracked (or N/A)
-  })),
-];
+// Display entries (project timesheets only)
+const displayEntries = filteredTimesheets.map((ts) => ({
+  id: `timesheet-${ts.timesheetId}`,
+  actualId: ts.timesheetId,
+  type: "Project",
+  employeeId: ts.employeeId,
+  projectId: ts.projectId,
+  date: ts.date,
+  hours: ts.hoursWorked,
+  description: ts.entries?.[0]?.description || "",
+  status: ts.approvalStatus || "Pending"
+}));
 
 
 
@@ -282,24 +228,6 @@ const displayEntries = [
             </td>
             )}
             <td>
-              <label>Entry Type</label><br />
-
-              <select
-                value={newTimesheet.entryType}
-                onChange={(e) =>
-                  setNewTimesheet({
-                    ...newTimesheet,
-                    entryType: e.target.value,
-                    projectId: ""
-                  })
-                }
-              >
-                <option value="Project">Project</option>
-                <option value="Bench">Bench</option>
-              </select>
-            </td>
-            {newTimesheet.entryType === "Project" && (
-            <td>
               <label>Project</label><br />
               <select
                 value={newTimesheet.projectId}
@@ -313,7 +241,7 @@ const displayEntries = [
                   </option>
                 ))}
               </select>
-            </td>)}
+            </td>
             <td>
               <label>Date</label><br />
               <input
@@ -389,7 +317,6 @@ const displayEntries = [
             <thead>
               <tr>
                 <th>Employee</th>
-                <th>Type</th>
                 <th>Project</th>
                 <th>Date</th>
                 <th>Hours</th>
@@ -406,7 +333,6 @@ const displayEntries = [
                     (e) => String(e.id) === String(entry.employeeId)
                   )?.name || entry.employeeId}
                 </td>
-                <td>{entry.type}</td>
                 <td>
                   {entry.projectId
                     ? projects.find(
@@ -420,7 +346,7 @@ const displayEntries = [
                 <td>{entry.description}</td>
                 <td>{entry.status}</td>
                 <td>
-                  {entry.type === "Project" && entry.status === "Pending" && (
+                  {entry.status === "Pending" && (
                     <div style={{ display: "flex", gap: "5px" }}>
                       <button onClick={async () => {
                         if(window.confirm("Approve timesheet?")) {

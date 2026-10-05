@@ -35,6 +35,13 @@ namespace Infrastructure.Persistence
                 .Include(t => t.Entries)
                 .ToListAsync();
 
+        public async Task<IEnumerable<Timesheet>> GetByEmployeeAsync(string employeeId) =>
+            await _context.Timesheets
+                .Where(t => t.EmployeeId == employeeId)
+                .Include(t => t.Entries)
+                .OrderByDescending(t => t.Date)
+                .ToListAsync();
+
         public async Task AddAsync(Timesheet timesheet)
         {
             await _context.Timesheets.AddAsync(timesheet);

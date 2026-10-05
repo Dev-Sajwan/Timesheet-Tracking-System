@@ -3,6 +3,7 @@ import EmployeeList from "./EmployeeList";
 import ProjectList from "./ProjectList";
 import AllocationList from "./AllocationList";
 import TimesheetForm from "./TimesheetForm";
+import HolidayList from "./HolidayList";
 import { useNavigate } from "react-router-dom";
 
 const ManagerDashboard = () => {
@@ -41,6 +42,9 @@ const ManagerDashboard = () => {
             <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "allocations" ? "bold" : "normal" }} onClick={() => setActiveTab("allocations")}>
               📊 Allocations
             </li>
+            <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "holidays" ? "bold" : "normal" }} onClick={() => setActiveTab("holidays")}>
+              📅 Holidays
+            </li>
           </ul>
         </div>
 
@@ -49,6 +53,7 @@ const ManagerDashboard = () => {
           {activeTab === "timesheets" && <TimesheetForm />}
           {activeTab === "employees" && <EmployeeList />}
           {activeTab === "allocations" && <AllocationList />}
+          {activeTab === "holidays" && <HolidayList />}
         </div>
       </div>
     </div>

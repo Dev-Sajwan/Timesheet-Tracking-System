@@ -29,6 +29,14 @@ namespace WebAPI.Controllers
             return Ok(_mapper.Map<IEnumerable<TimesheetDto>>(timesheets));
         }
 
+        // GET: api/timesheets/employee/{employeeId}
+        [HttpGet("employee/{employeeId}")]
+        public async Task<ActionResult<IEnumerable<TimesheetDto>>> GetByEmployee(string employeeId)
+        {
+            var timesheets = await _timesheetService.GetByEmployeeAsync(employeeId);
+            return Ok(_mapper.Map<IEnumerable<TimesheetDto>>(timesheets));
+        }
+
         // GET: api/timesheets/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<TimesheetDto>> GetById(int id)

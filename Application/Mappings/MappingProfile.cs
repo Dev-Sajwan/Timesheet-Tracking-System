@@ -12,7 +12,8 @@ namespace Application.Mappings
             CreateMap<TimesheetEntry, TimesheetEntryDto>().ReverseMap();
             CreateMap<Approval, ApprovalDto>().ReverseMap();
             CreateMap<Employee, EmployeeDto>()
-                .ForMember(dest => dest.Roles, opt => opt.Ignore()); // Roles come from Identity
+                .ForMember(dest => dest.Roles, opt => opt.Ignore())
+                .ForMember(dest => dest.Allocations, opt => opt.MapFrom(src => src.Allocations)); // Map allocations from Employee entity
             CreateMap<EmployeeDto, Employee>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore()) // Don't overwrite ID
                 .ForMember(dest => dest.UserId, opt => opt.Ignore()) // Don't overwrite UserId
@@ -27,6 +28,7 @@ namespace Application.Mappings
             CreateMap<BenchHour, BenchHourDto>().ReverseMap();
             CreateMap<Holiday, HolidayDto>().ReverseMap();
             CreateMap<LeaveRecord, LeaveRecordDto>().ReverseMap();
+
         }
     }
 }

@@ -74,7 +74,6 @@ const Login = () => {
           </button>
         </form>
         <div style={{ textAlign: "center", marginTop: "20px" }}>
-          {/* <p style={{ color: "#666", marginBottom: "10px" }}>Don't have an account? <Link to="/register" style={{ color: "#007bff", textDecoration: "none", fontWeight: "500" }}>Register</Link></p> */}
           <p style={{ color: "#666" }}>Forgot password? <Link to="/forgot-password" style={{ color: "#007bff", textDecoration: "none", fontWeight: "500" }}>Reset it</Link></p>
         </div>
       </div>

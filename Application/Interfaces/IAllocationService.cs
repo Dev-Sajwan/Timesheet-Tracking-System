@@ -8,7 +8,7 @@ namespace Application.Interfaces
         Task<IEnumerable<Allocation>> GetAllAsync();
         Task <Allocation?> GetByIdAsync(int id);
         Task DeleteAsync(int id);
-        Task<Allocation?> GetByEmployeeAndProjectAsync(string? employeeId, int projectId);
+        Task<List<Allocation>> GetByEmployeeAndProjectAsync(string employeeId);
 
         Task UpdateAsync(Allocation allocation);
     }

@@ -19,11 +19,14 @@ namespace Infrastructure.Persistence
         public async Task<IEnumerable<Allocation>> GetAllAsync() => await _context.Allocations.ToListAsync();
         public async Task<Allocation?> GetByIdAsync(int id) => await _context.Allocations.FindAsync(id);
 
-        public async Task<Allocation?> GetByEmployeeAndProjectAsync(string employeeId, int projectId)
+        public async Task<List<Allocation>> GetByEmployeeAndProjectAsync(string employeeId)
         {
+
             return await _context.Allocations
-                .FirstOrDefaultAsync(a => a.EmployeeId == employeeId && a.ProjectId == projectId);
+                .Where(a => a.EmployeeId == employeeId)
+                .ToListAsync();
         }
+
 
 
         public async Task DeleteAsync(int id)

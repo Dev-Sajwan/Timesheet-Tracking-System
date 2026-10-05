@@ -3,12 +3,14 @@ using Application.DTOs;
 using Application.Interfaces;
 using AutoMapper;
 using Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class HolidaysController : ControllerBase
     {
         private readonly IHolidayService _holidayService;
@@ -43,8 +45,9 @@ namespace WebAPI.Controllers
             return Ok(_mapper.Map<IEnumerable<HolidayDto>>(holidays));
         }
 
-        // POST: api/holidays
+        // POST: api/holidays (Admin, Manager only)
         [HttpPost]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> Add([FromBody] HolidayDto dto)
         {
             var holiday = _mapper.Map<Holiday>(dto);
@@ -54,8 +57,9 @@ namespace WebAPI.Controllers
             return Ok("Holiday added successfully!");
         }
 
-        // DELETE: api/holidays/{id}
+        // DELETE: api/holidays/{id} (Admin, Manager only)
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> Delete(int id)
         {
             await _holidayService.DeleteAsync(id);

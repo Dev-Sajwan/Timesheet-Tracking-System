@@ -19,6 +19,8 @@ public class EmployeeRepository : IEmployeeRepository
 
     public async Task<Employee?> GetByUserIdAsync(string userId) =>
         await _context.Employees
+            .Include(e => e.Allocations)
+            .Include(e => e.Timesheets)
             .FirstOrDefaultAsync(e => e.UserId == userId);
 
     public async Task<Employee?> GetByEmailAsync(string email) =>

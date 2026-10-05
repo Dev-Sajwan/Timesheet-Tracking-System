@@ -10,6 +10,9 @@
 
         // Role is retrieved from ASP.NET Core Identity, not stored in Employee table
         public List<string> Roles { get; set; } = new();
+        
+        // Allocations from Employee entity
+        public List<AllocationDto> Allocations { get; set; } = new();
     }
 
     public class CreateUserRequestDto

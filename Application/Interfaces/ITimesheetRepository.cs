@@ -7,6 +7,7 @@ namespace Application.Interfaces
         Task<IEnumerable<Timesheet>> GetAllAsync();
         Task<Timesheet> GetByIdAsync(int id);
         Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(string employeeId, DateTime weekStart);
+        Task<IEnumerable<Timesheet>> GetByEmployeeAsync(string employeeId);
         Task AddAsync(Timesheet timesheet);
         Task UpdateAsync(Timesheet timesheet);
         Task DeleteAsync(int id);

@@ -12,7 +12,7 @@ export default function ProjectList() {
     projectName: "",
     clientId: "",
     startDate: "",
-    endDate: ""
+    endDate: null
   });
 
   const [newClient, setNewClient] = useState({ clientName: "", description: "" });
@@ -46,7 +46,9 @@ export default function ProjectList() {
   const handleAddClient = async () => {
     await addClient(newClient);
     setNewClient({ clientName: "", description: "" });
-    loadClients(); // refresh client list
+    await loadClients(); // refresh client list
+    // Auto-select the newly added client
+    setNewProject(prev => ({ ...prev, clientId: "" }));
   };
 
 

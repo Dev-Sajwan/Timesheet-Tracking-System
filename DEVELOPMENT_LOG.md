@@ -41,3 +41,47 @@
 - Updated EmployeeList.js with Reset Password button for Admin users
 - Employee creation now properly links Identity user with Employee record
 - Build succeeds
+- Removed Register link from Login page (no longer required)
+- Removed Bench hours tracking - only Project hours now tracked
+- Updated standard weekly project hours to 48 hours
+- Added weekly hours summary on Employee Dashboard showing:
+  * Standard 48 hrs/week
+  * Holiday reduction (8 hrs per weekday holiday)
+  * Effective standard hours (48 - holiday reduction)
+  * Actual hours logged
+  * Regular hours (actual - comp-off)
+  * Comp-off hours (hours > 8/day, needs manager approval)
+  * Weekly status (Complete/Pending/Short)
+- Added holiday list display on Employee Dashboard with impact indicator
+- Added comp-off logic: Hours > 8 in a single day flagged as comp-off requiring manager approval
+- Updated TimesheetForm.js:
+  * Removed Entry Type selector (Project/Bench)
+  * Removed Bench hours functionality
+  * Added comp-off detection on submit (> 8 hrs = pending with comp-off flag)
+  * Description includes comp-off hours for tracking
+- Employee Dashboard now shows: Allocations, Weekly Hours Summary, Holiday List, Submit Timesheet, Timesheet History
+- Frontend builds successfully with warnings only
+- Fixed allocation display in EmployeeDashboard:
+  * Added getAllocationsByEmployee API call to fetch allocations directly by employee ID
+  * Fixed property names: allocationPercent (not allocationPercentage), allocationId (not id), projectId (not projectId in DTO)
+  * Added pagination to all tables in EmployeeDashboard (timesheets, holidays, allocations)
+  * Moved TimesheetForm to the top of the dashboard (before weekly summary)
+  * Added Pagination helper component
+  * Added getAllocationsByEmployee to Api.js
+- Fixed AllocationsController route conflicts:
+  * GET /api/allocations - Get all
+  * GET /api/allocations/employee/{employeeId} - Get allocations by employee
+  * GET /api/allocations/{id} - Get by ID
+  * POST /api/allocations - Create
+  * DELETE /api/allocations/{id} - Delete
+- Fixed HolidaysController authorization:
+  * GET - All authenticated users
+  * POST/DELETE - Admin, Manager only
+- Created HolidayList.jsx component with role-based UI
+- Added Holiday management tabs to ManagerDashboard and AdminDashboard
+- Added deleteHoliday function to Api.js
+- Fixed HolidayList.jsx removing duplicate isWeekend function
+- EmployeeDto now includes Allocations list
+- MappingProfile updated to map Allocations from Employee to EmployeeDto
+- GetByUserIdAsync in EmployeeRepository now includes Allocations and Timesheets
+- Build succeeds (need to stop VS debugging first for backend build)
