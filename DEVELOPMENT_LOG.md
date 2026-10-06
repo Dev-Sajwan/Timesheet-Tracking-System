@@ -85,3 +85,13 @@
 - MappingProfile updated to map Allocations from Employee to EmployeeDto
 - GetByUserIdAsync in EmployeeRepository now includes Allocations and Timesheets
 - Build succeeds (need to stop VS debugging first for backend build)
+- Added GlobalExceptionMiddleware for centralized error handling
+- Added [Authorize] attribute to all controllers (class-level)
+- Added [AllowAnonymous] to AuthController endpoints (Register, Login, ForgotPassword, ResetPassword)
+- Added ILogger to all controllers with structured logging
+- Added try-catch blocks to ALL controller actions with proper error responses
+- Added detailed logging for all operations (Info, Warning, Error levels)
+- Configured global exception middleware in Program.cs
+- Added Swagger security definition for Bearer token
+- All controllers now return consistent error responses with status codes
+- Errors no longer crash the running program - caught and logged gracefully

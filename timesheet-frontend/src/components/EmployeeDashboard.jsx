@@ -121,7 +121,7 @@ const EmployeeDashboard = () => {
 
     return Object.entries(weekMap).map(([weekKey, data]) => {
       const holidayReduction = holidayMap[weekKey] || 0;
-      const standardHours = 48 - holidayReduction;
+      const standardHours = 40 - holidayReduction;
       const actualHours = data.totalHours;
       const compOffHours = data.compOffHours;
       const regularHours = actualHours - compOffHours;
@@ -194,7 +194,7 @@ const EmployeeDashboard = () => {
                 {weeklySummary.map(week => (
                   <tr key={week.weekStart}>
                     <td>{week.weekStart} to {week.weekEnd}</td>
-                    <td>48</td>
+                    <td>40</td>
                     <td>{week.holidayReduction} hrs</td>
                     <td><strong>{week.standardHours}</strong></td>
                     <td><strong>{week.actualHours}</strong></td>

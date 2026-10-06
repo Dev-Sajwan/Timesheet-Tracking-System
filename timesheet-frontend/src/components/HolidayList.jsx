@@ -162,7 +162,7 @@ export default function HolidayList() {
       <div style={{ marginTop: "20px", padding: "15px", background: "#f8f9fa", borderRadius: "5px", fontSize: "0.9em" }}>
         <strong>Note:</strong> Weekday holidays reduce the weekly productive hours by 8 hours each. 
         Weekends (Saturday/Sunday) are marked in yellow and don't reduce hours. 
-        Standard weekly hours: 48 hrs.
+        Standard weekly hours: 40 hrs.
       </div>
     </div>
   );

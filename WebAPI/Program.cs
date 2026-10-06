@@ -8,7 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
+using WebAPI.Middleware;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,9 +73,40 @@ foreach (var provider in ((IConfigurationRoot)builder.Configuration).Providers)
     Console.WriteLine(provider);
 }
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    // Add global authorization filter
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter());
+});
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Timesheet API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            new string[] {}
+        }
+    });
+});
+
+// Add logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.SetMinimumLevel(LogLevel.Information);
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
@@ -111,6 +145,9 @@ builder.Services.AddAuthentication(options =>
 });
 
 var app = builder.Build();
+
+// Add global exception handling middleware (must be first)
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 using (var scope = app.Services.CreateScope())
 {
