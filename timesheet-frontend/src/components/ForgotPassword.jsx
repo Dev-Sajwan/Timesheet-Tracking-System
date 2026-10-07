@@ -67,7 +67,7 @@ const ForgotPassword = () => {
               style={{ 
                 width: "100%", 
                 padding: "12px", 
-                background: loading ? "#6c757d" : "#007bff", 
+                background: loading ? "#6c757d" : "#d748f7", 
                 color: "white", 
                 border: "none", 
                 borderRadius: "5px", 
@@ -114,11 +114,11 @@ const ForgotPassword = () => {
         )}
 
         <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <Link to="/" style={{ color: "#007bff", textDecoration: "none" }}>← Back to Login</Link>
+          <Link to="/" style={{ color: "#c16cdf", textDecoration: "none" }}>← Back to Login</Link>
         </div>
-        <div style={{ textAlign: "center", marginTop: "10px" }}>
+        {/* <div style={{ textAlign: "center", marginTop: "10px" }}>
           <Link to="/register" style={{ color: "#007bff", textDecoration: "none" }}>Create an account</Link>
-        </div>
+        </div> */}
       </div>
     </div>
   );

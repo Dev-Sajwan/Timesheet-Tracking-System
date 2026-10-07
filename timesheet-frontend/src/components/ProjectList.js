@@ -10,6 +10,8 @@ export default function ProjectList() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [sortColumn, setSortColumn] = useState("ProjectName");
+  const [sortDirection, setSortDirection] = useState("asc");
   const [newProject, setNewProject] = useState({
     projectName: "",
     clientId: "",
@@ -60,15 +62,25 @@ export default function ProjectList() {
   };
 
   const filteredProjects = projects.filter(
-    (proj) =>
-      proj.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getClientName(proj.clientId).toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  (proj) =>
+    proj.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    getClientName(proj.clientId).toLowerCase().includes(searchTerm.toLowerCase())
+);
 
-  const indexOfLastProject = currentPage * projectsPerPage;
-  const indexOfFirstProject = indexOfLastProject - projectsPerPage;
-  const currentProjects = filteredProjects.slice(indexOfFirstProject, indexOfLastProject);
-  const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
+const sortedProjects = [...filteredProjects].sort((a, b) => {
+  let valA = sortColumn === "ProjectName" ? a.projectName : getClientName(a.clientId);
+  let valB = sortColumn === "ProjectName" ? b.projectName : getClientName(b.clientId);
+
+  return sortDirection === "asc"
+    ? valA.localeCompare(valB)
+    : valB.localeCompare(valA);
+});
+
+const indexOfLastProject = currentPage * projectsPerPage;
+const indexOfFirstProject = indexOfLastProject - projectsPerPage;
+const currentProjects = sortedProjects.slice(indexOfFirstProject, indexOfLastProject);
+const totalPages = Math.ceil(sortedProjects.length / projectsPerPage);
+
 
   const inputStyle = { ...globalStyles.input, marginBottom: designSystem.spacing.sm };
   const selectStyle = { ...inputStyle };
@@ -115,15 +127,17 @@ export default function ProjectList() {
       <div style={{ marginBottom: designSystem.spacing.md }}>
         <div style={{ display: "flex", gap: designSystem.spacing.sm, marginBottom: designSystem.spacing.md }}>
           <select
-            value={searchTerm === "" ? "" : ""}
+            value={sortColumn}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
+              setSortColumn(e.target.value);
               setCurrentPage(1);
             }}
             style={{ ...selectStyle, marginRight: designSystem.spacing.sm }}
           >
-            <option value="">Filter by project or client...</option>
+            <option value="ProjectName">Sort by Project Name</option>
+            <option value="Client">Sort by Client</option>
           </select>
+
           <input
             type="text"
             placeholder="Search by project or client..."
@@ -132,6 +146,7 @@ export default function ProjectList() {
             style={{ ...inputStyle, width: "auto", maxWidth: "350px" }}
           />
         </div>
+
 
         <div style={{ overflowX: "auto" }}>
           <table style={{ ...globalStyles.table }}>
