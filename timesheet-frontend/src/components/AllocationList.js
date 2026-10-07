@@ -8,6 +8,8 @@ import {
   getProjects,
   getClients
 } from "../Services/Api";
+import { designSystem, globalStyles } from "../styles/designSystem";
+import Button from "./Button";
 
 export default function AllocationList() {
   const [allocations, setAllocations] = useState([]);
@@ -15,12 +17,8 @@ export default function AllocationList() {
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
 
-  // Employee IDs are strings because Employee inherits IdentityUser
   const [selectedEmployees, setSelectedEmployees] = useState([]);
-
-  // Project ID remains numeric
   const [selectedProject, setSelectedProject] = useState("");
-
   const [allocationPercent, setAllocationPercent] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -67,23 +65,14 @@ export default function AllocationList() {
 
     for (const empId of selectedEmployees) {
       const allocationData = {
-        // Identity Employee.Id is a string
         employeeId: empId,
-
-        // ProjectId remains an integer
         projectId: Number(selectedProject),
-
         allocationPercent: Number(allocationPercent),
-
         startDate: new Date(startDate).toISOString(),
-
-        endDate: endDate
-          ? new Date(endDate).toISOString()
-          : null
+        endDate: endDate ? new Date(endDate).toISOString() : null
       };
 
       console.log("Posting allocation:", allocationData);
-
       await addAllocation(allocationData);
     }
 
@@ -104,303 +93,152 @@ export default function AllocationList() {
   const handleEmployeeSelect = (e) => {
     const options = e.target.options;
     const selected = [];
-
     for (let i = 0; i < options.length; i++) {
       if (options[i].selected) {
-        // DO NOT convert Identity ID to Number
         selected.push(options[i].value);
       }
     }
-
     setSelectedEmployees(selected);
   };
 
+  const labelStyle = { display: "block", marginBottom: designSystem.spacing.xs, color: designSystem.colors.text, ...designSystem.typography.bodyStrong };
+  const inputStyle = { ...globalStyles.input, marginBottom: designSystem.spacing.sm };
+  const selectStyle = { ...globalStyles.select, marginBottom: designSystem.spacing.sm };
+
   return (
-    <div
-      style={{
-        background: "#fff",
-        padding: "20px",
-        borderRadius: "8px",
-        alignItems: "center",
-        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)"
-      }}
-    >
-      <h2>Allocations</h2>
+    <div style={{ padding: designSystem.spacing.lg, maxWidth: "1100px", margin: "0 auto", fontFamily: "Segoe UI Variable, Segoe UI, sans-serif" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md }}>
+        <h2 style={{ margin: 0, ...designSystem.typography.h1, color: designSystem.colors.text }}>Allocations</h2>
+      </div>
 
-      {/* Allocation Form */}
-      <table
-        style={{
-          width: "80%",
-          borderCollapse: "collapse",
-          marginBottom: "20px"
-        }}
-      >
-        <tbody>
+      <div style={{ ...globalStyles.cardElevated, marginBottom: designSystem.spacing.lg }}>
+        <h3 style={{ ...designSystem.typography.h3, margin: `0 0 ${designSystem.spacing.md} 0`, color: designSystem.colors.text }}>Assign Allocation</h3>
+        <div style={{ display: "flex", gap: designSystem.spacing.sm, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ flex: 1, minWidth: "200px" }}>
+            <label style={labelStyle}>Project</label>
+            <select
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Select Project</option>
+              {projects.map((proj) => (
+                <option key={proj.projectId} value={proj.projectId}>
+                  {proj.projectName} - ({clients.find((c) => c.clientId === proj.clientId)?.clientName || proj.clientId})
+                </option>
+              ))}
+            </select>
+          </div>
 
-          {/* Project Dropdown */}
-          <tr>
-            <td>
-              <label>Project</label>
-            </td>
+          <div style={{ flex: 1, minWidth: "250px" }}>
+            <label style={labelStyle}>Employees (hold Ctrl/Cmd to multi-select)</label>
+            <select
+              multiple
+              value={selectedEmployees}
+              onChange={handleEmployeeSelect}
+              style={{ ...selectStyle, minHeight: '80px'}}
+            >
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name} - {emp.email}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <td>
-              <select
-                value={selectedProject}
-                onChange={(e) => setSelectedProject(e.target.value)}
-              >
-                <option value="">Select Project</option>
+          <div style={{ flex: 1, minWidth: "120px" }}>
+            <label style={labelStyle}>Allocation %</label>
+            <input
+              type="number"
+              value={allocationPercent}
+              onChange={(e) => setAllocationPercent(e.target.value)}
+              placeholder="Enter %"
+              style={inputStyle}
+              min="0"
+              max="100"
+            />
+          </div>
 
-                {projects.map((proj) => (
-                  <option
-                    key={proj.projectId}
-                    value={proj.projectId}
-                  >
-                    {proj.projectName} - (
-                    {
-                      clients.find(
-                        (c) => c.clientId === proj.clientId
-                      )?.clientName || proj.clientId
-                    }
-                    )
-                  </option>
-                ))}
-              </select>
-            </td>
-          </tr>
+          <div style={{ flex: 1, minWidth: "140px" }}>
+            <label style={labelStyle}>Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
 
-          {/* Employee Multi-Select */}
-          <tr>
-            <td>
-              <label>Employees</label>
-            </td>
+          <div style={{ flex: 1, minWidth: "140px" }}>
+            <label style={labelStyle}>End Date (optional)</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
 
-            <td>
-              <select
-                multiple
-                value={selectedEmployees}
-                onChange={handleEmployeeSelect}
-              >
-                {employees.map((emp) => (
-                  <option
-                    key={emp.id}
-                    value={emp.id}
-                  >
-                    {emp.name} - {emp.email}
-                  </option>
-                ))}
-              </select>
-            </td>
-          </tr>
+          <Button variant="primary" onClick={handleAdd} style={{ marginTop: 'auto' }}>Assign Project</Button>
+        </div>
+      </div>
 
-          {/* Allocation Percent */}
-          <tr>
-            <td>
-              <label>Allocation Percent</label>
-            </td>
-
-            <td>
-              <input
-                type="number"
-                value={allocationPercent}
-                onChange={(e) =>
-                  setAllocationPercent(e.target.value)
-                }
-                placeholder="Enter %"
-              />
-            </td>
-          </tr>
-
-          {/* Start Date */}
-          <tr>
-            <td>
-              <label>Start Date</label>
-            </td>
-
-            <td>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </td>
-          </tr>
-
-          {/* End Date */}
-          <tr>
-            <td>
-              <label>End Date</label>
-            </td>
-
-            <td>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </td>
-          </tr>
-
-          {/* Assign */}
-          <tr align="center">
-            <td colSpan="2">
-              <button onClick={handleAdd}>
-                Assign Project
-              </button>
-            </td>
-          </tr>
-
-        </tbody>
-      </table>
-
-      {/* Allocation List */}
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          marginTop: "20px"
-        }}
-      >
-        <thead>
-          <tr style={{ background: "#f4f4f4" }}>
-            <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-              Employee
-            </th>
-
-            <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-              Project
-            </th>
-
-            <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-              Client
-            </th>
-
-            <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-              Allocation %
-            </th>
-
-            <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-              Start Date
-            </th>
-
-            <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-              End Date
-            </th>
-
-            <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-              Actions
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {allocations.map((alloc) => {
-
-            // Employee.Id is a string
-            const emp = employees.find(
-              (e) => String(e.id) === String(alloc.employeeId)
-            );
-
-            // ProjectId is an integer
-            const proj = projects.find(
-              (p) => Number(p.projectId) === Number(alloc.projectId)
-            );
-
-            const clientName = proj
-              ? clients.find(
-                  (c) =>
-                    Number(c.clientId) === Number(proj.clientId)
-                )?.clientName
-              : null;
-
-            return (
-              <tr key={alloc.allocationId}>
-
-                <td
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: "8px"
-                  }}
-                >
-                  {emp
-                    ? `${emp.name} (${emp.email})`
-                    : `Employee ${alloc.employeeId}`}
-                </td>
-
-                <td
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: "8px"
-                  }}
-                >
-                  {proj
-                    ? proj.projectName
-                    : `Project ${alloc.projectId}`}
-                </td>
-
-                <td
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: "8px"
-                  }}
-                >
-                  {clientName || proj?.clientId}
-                </td>
-
-                <td
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: "8px"
-                  }}
-                >
-                  {alloc.allocationPercent}%
-                </td>
-
-                <td
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: "8px"
-                  }}
-                >
-                  {alloc.startDate
-                    ? new Date(
-                        alloc.startDate
-                      ).toLocaleDateString()
-                    : ""}
-                </td>
-
-                <td
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: "8px"
-                  }}
-                >
-                  {alloc.endDate
-                    ? new Date(
-                        alloc.endDate
-                      ).toLocaleDateString()
-                    : ""}
-                </td>
-
-                <td
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: "8px"
-                  }}
-                >
-                  <button
-                    onClick={() =>
-                      handleDelete(alloc.allocationId)
-                    }
-                  >
-                    Remove
-                  </button>
-                </td>
-
+      <div style={{ ...globalStyles.cardElevated }}>
+        <h3 style={{ ...designSystem.typography.h3, margin: `0 0 ${designSystem.spacing.md} 0`, color: designSystem.colors.text }}>Current Allocations</h3>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ ...globalStyles.table }}>
+            <thead>
+              <tr style={{ ...globalStyles.tableHeader }}>
+                <th style={globalStyles.tableheadercell}>Employee</th>
+                <th style={globalStyles.tableheadercell}>Project</th>
+                <th style={globalStyles.tableheadercell}>Client</th>
+                <th style={globalStyles.tableheadercell}>Allocation %</th>
+                <th style={globalStyles.tableheadercell}>Start Date</th>
+                <th style={globalStyles.tableheadercell}>End Date</th>
+                <th style={globalStyles.tableheadercell}>Actions</th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {allocations.map((alloc) => {
+                const emp = employees.find((e) => String(e.id) === String(alloc.employeeId));
+                const proj = projects.find((p) => Number(p.projectId) === Number(alloc.projectId));
+                const clientName = proj
+                  ? clients.find((c) => Number(c.clientId) === Number(proj.clientId))?.clientName
+                  : null;
+
+                return (
+                  <tr key={alloc.allocationId} style={{ ...globalStyles.tableRow }}>
+                    <td style={{ ...globalStyles.tableCell }}>
+                      {emp ? `${emp.name} (${emp.email})` : `Employee ${alloc.employeeId}`}
+                    </td>
+                    <td style={{ ...globalStyles.tableCell }}>
+                      {proj ? proj.projectName : `Project ${alloc.projectId}`}
+                    </td>
+                    <td style={{ ...globalStyles.tableCell }}>
+                      {clientName || proj?.clientId || "—"}
+                    </td>
+                    <td style={{ ...globalStyles.tableCell }}>{alloc.allocationPercent}%</td>
+                    <td style={{ ...globalStyles.tableCell }}>
+                      {alloc.startDate ? new Date(alloc.startDate).toLocaleDateString() : ""}
+                    </td>
+                    <td style={{ ...globalStyles.tableCell }}>
+                      {alloc.endDate ? new Date(alloc.endDate).toLocaleDateString() : ""}
+                    </td>
+                    <td style={{ ...globalStyles.tableCell }}>
+                      <Button variant="danger" size="small" onClick={() => handleDelete(alloc.allocationId)}>Remove</Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {allocations.length === 0 && (
+          <p style={{ textAlign: 'center', padding: designSystem.spacing.xl, color: designSystem.colors.textSecondary, ...designSystem.typography.body }}>
+            No allocations configured yet.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { getHolidays, addHoliday, deleteHoliday } from "../Services/Api";
 import { jwtDecode } from "jwt-decode";
+import { designSystem, globalStyles } from "../styles/designSystem";
+import Modal from "./Modal";
+import Button from "./Button";
 
 export default function HolidayList() {
   const [holidays, setHolidays] = useState([]);
@@ -68,100 +71,108 @@ export default function HolidayList() {
     return day === 0 || day === 6;
   };
 
+  const labelStyle = { display: "block", marginBottom: designSystem.spacing.xs, color: designSystem.colors.text, ...designSystem.typography.bodyMedium };
+  const inputStyle = { ...globalStyles.input, marginBottom: designSystem.spacing.sm };
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Holiday Management</h2>
-      {!canEdit && <p style={{ color: "#666", fontStyle: "italic" }}>View only - Contact Admin/Manager to modify holidays</p>}
-      
-      {error && <div style={{ background: "#f8d7da", color: "#721c24", padding: "10px", borderRadius: "5px", marginBottom: "15px" }}>{error}</div>}
+    <div style={{ padding: designSystem.spacing.lg, maxWidth: "900px", margin: "0 auto", fontFamily: "Roboto, Arial, sans-serif" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md }}>
+        <h2 style={{ margin: 0, ...designSystem.typography.h1, color: designSystem.colors.text }}>Holiday Management</h2>
+        {canEdit && (
+          <Button variant="primary" onClick={() => setShowForm(!showForm)}>
+            {showForm ? "Cancel" : "+ Add Holiday"}
+          </Button>
+        )}
+      </div>
 
-      {/* Add Holiday Form - Only for Admin/Manager */}
-      {canEdit && (
-        <>
-          <button onClick={() => setShowForm(!showForm)} style={{ marginBottom: "15px", padding: "10px 15px", background: "#28a745", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" }}>
-            {showForm ? "Cancel" : "➕ Add Holiday"}
-          </button>
-
-          {showForm && (
-            <div style={{ marginTop: "15px", border: "1px solid #ccc", padding: "15px", borderRadius: "5px", background: "#f8f9fa" }}>
-              <div style={{ marginBottom: "10px" }}>
-                <label style={{ display: "block", marginBottom: "5px" }}>Date</label>
-                <input
-                  type="date"
-                  value={newHoliday.date}
-                  onChange={(e) => setNewHoliday({ ...newHoliday, date: e.target.value })}
-                  style={{ width: "250px", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-                />
-              </div>
-              <div style={{ marginBottom: "10px" }}>
-                <label style={{ display: "block", marginBottom: "5px" }}>Description</label>
-                <input
-                  type="text"
-                  value={newHoliday.description}
-                  onChange={(e) => setNewHoliday({ ...newHoliday, description: e.target.value })}
-                  style={{ width: "400px", padding: "8px", border: "1px solid #ccc", borderRadius: "4px" }}
-                />
-              </div>
-              <button onClick={handleAddHoliday} style={{ padding: "8px 16px", background: "#007bff", color: "white", border: "none", borderRadius: "4px", marginRight: "10px" }}>Save</button>
-              <button onClick={() => setShowForm(false)} style={{ padding: "8px 16px", background: "#6c757d", color: "white", border: "none", borderRadius: "4px" }}>Cancel</button>
-            </div>
-          )}
-        </>
+      {!canEdit && (
+        <p style={{ color: designSystem.colors.textSecondary, ...designSystem.typography.body, fontStyle: "italic" }}>
+          View only - Contact Admin/Manager to modify holidays
+        </p>
       )}
 
-      {/* Holiday List */}
-      <table border="1" width="100%" cellPadding="10" style={{ borderCollapse: "collapse", marginTop: "20px" }}>
-        <thead>
-          <tr style={{ background: "#f2f2f2" }}>
-            <th>Date</th>
-            <th>Day</th>
-            <th>Description</th>
-            <th>Impact</th>
-            {canEdit && <th>Action</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {holidays.length > 0 ? (
-            holidays.map(h => {
-              const holidayDate = new Date(h.date);
-              const dayName = holidayDate.toLocaleDateString('en-US', { weekday: 'long' });
-              const isWeekendDay = isWeekend(h.date);
-              return (
-                <tr key={h.holidayId} style={{ background: isWeekendDay ? "#fff3cd" : "white" }}>
-                  <td>{holidayDate.toLocaleDateString()}</td>
-                  <td>{dayName}</td>
-                  <td>{h.description}</td>
-                  <td>
-                    {isWeekendDay ? (
-                      <span style={{ color: "#856404" }}>⚠ Weekend (no hour reduction)</span>
-                    ) : (
-                      <span style={{ color: "#e74c3c", fontWeight: "bold" }}>📉 Reduces week by 8 hrs</span>
-                    )}
-                  </td>
-                  {canEdit && (
-                    <td>
-                      <button 
-                        onClick={() => handleDelete(h.holidayId)} 
-                        style={{ background: "#e74c3c", color: "white", border: "none", padding: "5px 10px", borderRadius: "3px", cursor: "pointer" }}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              );
-            })
-          ) : (
-            <tr>
-              <td colSpan={canEdit ? 5 : 4} style={{ textAlign: "center", padding: "20px" }}>No holidays configured.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {error && (
+        <div style={{ background: "#FFEBEE", color: designSystem.colors.error, padding: designSystem.spacing.sm, borderRadius: designSystem.radius, marginBottom: designSystem.spacing.md, ...designSystem.typography.body }}>
+          {error}
+        </div>
+      )}
 
-      <div style={{ marginTop: "20px", padding: "15px", background: "#f8f9fa", borderRadius: "5px", fontSize: "0.9em" }}>
-        <strong>Note:</strong> Weekday holidays reduce the weekly productive hours by 8 hours each. 
-        Weekends (Saturday/Sunday) are marked in yellow and don't reduce hours. 
+      <Modal
+        isOpen={showForm && canEdit}
+        onClose={() => setShowForm(false)}
+        title="Add Holiday"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleAddHoliday}>Save</Button>
+          </>
+        }
+      >
+        <label style={labelStyle}>Date</label>
+        <input
+          type="date"
+          value={newHoliday.date}
+          onChange={(e) => setNewHoliday({ ...newHoliday, date: e.target.value })}
+          style={inputStyle}
+        />
+        <label style={labelStyle}>Description</label>
+        <input
+          type="text"
+          value={newHoliday.description}
+          onChange={(e) => setNewHoliday({ ...newHoliday, description: e.target.value })}
+          style={inputStyle}
+        />
+      </Modal>
+
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ ...globalStyles.table }}>
+          <thead>
+            <tr style={{ ...globalStyles.tableHeader }}>
+              <th>Date</th>
+              <th>Day</th>
+              <th>Description</th>
+              <th>Impact</th>
+              {canEdit && <th>Action</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {holidays.length > 0 ? (
+              holidays.map(h => {
+                const holidayDate = new Date(h.date);
+                const dayName = holidayDate.toLocaleDateString('en-US', { weekday: 'long' });
+                const isWeekendDay = isWeekend(h.date);
+                return (
+                  <tr key={h.holidayId} style={{ ...globalStyles.tableRowEven, background: isWeekendDay ? "#fff3cd" : designSystem.colors.white }}>
+                    <td style={{ ...globalStyles.tableCell }}>{holidayDate.toLocaleDateString()}</td>
+                    <td style={{ ...globalStyles.tableCell }}>{dayName}</td>
+                    <td style={{ ...globalStyles.tableCell }}>{h.description}</td>
+                    <td style={{ ...globalStyles.tableCell }}>
+                      {isWeekendDay ? (
+                        <span style={{ color: "#856404" }}>Weekend (no hour reduction)</span>
+                      ) : (
+                        <span style={{ color: designSystem.colors.error, fontWeight: "bold" }}>Reduces week by 8 hrs</span>
+                      )}
+                    </td>
+                    {canEdit && (
+                      <td style={{ ...globalStyles.tableCell }}>
+                        <Button variant="secondary" size="small" onClick={() => handleDelete(h.holidayId)} style={{ background: designSystem.colors.error, color: designSystem.colors.white }}>Delete</Button>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={canEdit ? 5 : 4} style={{ ...globalStyles.tableCell, textAlign: "center", padding: designSystem.spacing.xl }}>No holidays configured.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ marginTop: designSystem.spacing.lg, padding: designSystem.spacing.md, background: designSystem.colors.background, borderRadius: designSystem.radius, ...designSystem.typography.body, fontSize: "0.9em", color: designSystem.colors.textSecondary }}>
+        <strong>Note:</strong> Weekday holidays reduce the weekly productive hours by 8 hours each.
+        Weekends (Saturday/Sunday) are marked in yellow and don't reduce hours.
         Standard weekly hours: 40 hrs.
       </div>
     </div>

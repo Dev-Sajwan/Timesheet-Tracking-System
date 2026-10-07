@@ -1,13 +1,203 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+/* Windows 11 Inspired Global Styles */
+
+:root {
+  /* Color tokens */
+  --color-primary: #0078D4;
+  --color-primary-dark: #005A9E;
+  --color-primary-light: #2B88D8;
+  --color-primary-hover: #106EBE;
+  --color-secondary: #FFB900;
+  --color-secondary-dark: #C79300;
+  --color-background: #F3F3F3;
+  --color-background-alt: #EBEBEB;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F8F8F8;
+  --color-surface-pressed: #F0F0F0;
+  --color-text: #1B1B1B;
+  --color-text-secondary: #616161;
+  --color-text-disabled: #A1A1A1;
+  --color-error: #D83B01;
+  --color-error-light: #FDE7E9;
+  --color-success: #107C10;
+  --color-success-light: #DFF6DD;
+  --color-warning: #CA5010;
+  --color-warning-light: #FFF4E8;
+  --color-divider: #E1E1E1;
+  --color-divider-strong: #CCCCCC;
+  --color-white: #FFFFFF;
+  --color-black: #1B1B1B;
+
+  /* Radius tokens */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadow tokens */
+  --shadow-elevation1: 0 1px 2px rgba(0,0,0,0.05), 0 1px 1px rgba(0,0,0,0.03);
+  --shadow-elevation4: 0 2px 4px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.05);
+  --shadow-elevation8: 0 4px 8px rgba(0,0,0,0.07), 0 8px 16px rgba(0,0,0,0.06);
+  --shadow-elevation16: 0 8px 16px rgba(0,0,0,0.08), 0 16px 32px rgba(0,0,0,0.07);
+  --shadow-elevation64: 0 16px 32px rgba(0,0,0,0.1), 0 32px 64px rgba(0,0,0,0.08);
+  --shadow-focus: 0 0 0 2px #FFFFFF, 0 0 0 4px #0078D4;
+
+  /* Transition tokens */
+  --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index tokens */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  line-height: 1.5;
+  min-height: 100vh;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: "Cascadia Code", "Consolas", "Monaco", monospace;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Selection colors */
+::selection {
+  background-color: rgba(0, 120, 212, 0.2);
+  color: var(--color-text);
+}
+
+/* Scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-divider-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-divider-strong);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-disabled);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Utility classes */
+.animate-fade-in { animation: fadeIn var(--transition-normal); }
+.animate-scale-in { animation: scaleIn var(--transition-normal); }
+.animate-slide-up { animation: slideUp var(--transition-normal); }
+.animate-slide-down { animation: slideDown var(--transition-normal); }
+.animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* Mica/Acrylic backdrop utility */
+.backdrop-mica {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.backdrop-acrylic {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-divider) 25%, var(--color-background-alt) 50%, var(--color-divider) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  border-radius: var(--radius-md);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode adjustments */
+@media (prefers-contrast: high) {
+  :root {
+    --color-divider: #000000;
+    --color-divider-strong: #000000;
+    --color-text-secondary: #000000;
+    --color-text-disabled: #333333;
+  }
 }

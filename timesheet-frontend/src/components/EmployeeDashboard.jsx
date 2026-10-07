@@ -2,8 +2,10 @@ import React, { useState, useEffect, useMemo } from "react";
 import { getTimesheetsByEmployee, getEmployees, getProjects, getHolidays, getAllocationsByEmployee } from "../Services/Api";
 import TimesheetForm from "./TimesheetForm";
 import { useNavigate } from "react-router-dom";
+import { designSystem, globalStyles } from "../styles/designSystem";
+import Modal from "./Modal";
+import Button from "./Button";
 
-// Helper functions
 const getWeekRange = (date) => {
   const d = new Date(date);
   const day = d.getDay();
@@ -27,7 +29,6 @@ const getWeekKey = (date) => {
   return start.toISOString().split('T')[0];
 };
 
-// Pagination helper component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
   const pages = [];
@@ -36,14 +37,14 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   for (let i = start; i <= end; i++) pages.push(i);
 
   return (
-    <div style={{ marginTop: "10px" }}>
-      <button disabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)}>Prev</button>
-      {start > 1 && <span> ... </span>}
+    <div style={{ marginTop: designSystem.spacing.md, display: "flex", gap: designSystem.spacing.sm, alignItems: "center" }}>
+      <Button variant="secondary" size="small" disabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)}>Prev</Button>
+      {start > 1 && <span style={{ ...designSystem.typography.caption, color: designSystem.colors.textSecondary }}> ... </span>}
       {pages.map(p => (
-        <button key={p} onClick={() => onPageChange(p)} style={{ margin: "0 2px", fontWeight: p === currentPage ? "bold" : "normal" }}>{p}</button>
+        <Button key={p} variant="secondary" size="small" onClick={() => onPageChange(p)} style={{ fontWeight: p === currentPage ? "bold" : "normal" }}>{p}</Button>
       ))}
-      {end < totalPages && <span> ... </span>}
-      <button disabled={currentPage === totalPages} onClick={() => onPageChange(currentPage + 1)}>Next</button>
+      {end < totalPages && <span style={{ ...designSystem.typography.caption, color: designSystem.colors.textSecondary }}> ... </span>}
+      <Button variant="secondary" size="small" disabled={currentPage === totalPages} onClick={() => onPageChange(currentPage + 1)}>Next</Button>
     </div>
   );
 };
@@ -51,29 +52,19 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 const EmployeeDashboard = () => {
   const [timesheets, setTimesheets] = useState([]);
   const [allocations, setAllocations] = useState([]);
-  const [employeeInfo, setEmployeeInfo] = useState(null);
   const [projects, setProjects] = useState([]);
   const [holidays, setHolidays] = useState([]);
   const [timesheetPage, setTimesheetPage] = useState(1);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
   const employeeId = localStorage.getItem("employeeId");
   const fullName = localStorage.getItem("fullName");
   const navigate = useNavigate();
   const itemsPerPage = 4;
 
-  useEffect(() => {
-    if (employeeId) {
-      loadData();
-    }
-  }, [employeeId]);
-
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
     try {
-      // Get employee info and allocations from getEmployees (includes allocations)
-      const empRes = await getEmployees();
-      const me = empRes.data.find(e => e.id === employeeId);
-      setEmployeeInfo(me);
+      await getEmployees();
       
-      // Also fetch allocations directly by employee ID
       const allocRes = await getAllocationsByEmployee(employeeId);
       setAllocations(allocRes.data || []);
 
@@ -88,9 +79,14 @@ const EmployeeDashboard = () => {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [employeeId]);
 
-  // Calculate weekly hours summary
+  useEffect(() => {
+    if (employeeId) {
+      loadData();
+    }
+  }, [employeeId, loadData]);
+
   const weeklySummary = useMemo(() => {
     if (!timesheets.length) return [];
     
@@ -149,7 +145,6 @@ const EmployeeDashboard = () => {
     navigate("/");
   };
 
-  // Pagination for timesheets
   const timesheetPages = Math.ceil(timesheets.length / itemsPerPage);
   const paginatedTimesheets = timesheets.slice(
     (timesheetPage - 1) * itemsPerPage,
@@ -157,79 +152,105 @@ const EmployeeDashboard = () => {
   );
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", background: "#2c3e50", color: "white", padding: "10px 20px" }}>
-        <h2>Employee Dashboard</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-           <span>{fullName}</span>
-           <button onClick={handleLogout} style={{ padding: "5px 15px", background: "#e74c3c", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" }}>Logout</button>
+    <div style={{ minHeight: "100vh", background: designSystem.colors.background, fontFamily: "Roboto, Arial, sans-serif" }}>
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center",
+        background: designSystem.colors.primary, 
+        color: designSystem.colors.white, 
+        padding: `${designSystem.spacing.sm} ${designSystem.spacing.lg}`,
+        ...designSystem.typography.h1,
+      }}>
+        <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>Employee Dashboard</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: designSystem.spacing.md }}>
+           <span style={{ fontSize: "14px" }}>{fullName}</span>
+           <Button variant="secondary" size="small" onClick={handleLogout} style={{ background: designSystem.colors.error, color: designSystem.colors.white, border: 'none' }}>Logout</Button>
         </div>
       </div>
       
-      <div style={{ padding: "20px" }}>
-        {/* Submit Timesheet - at the top */}
-        <h3>Submit Timesheet</h3>
-        <TimesheetForm employeeId={employeeId} onSubmitted={loadData} />
+      <div style={{ padding: designSystem.spacing.lg, maxWidth: "900px", margin: "0 auto" }}>
+        <div style={{ ...globalStyles.card, marginBottom: designSystem.spacing.lg }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.sm }}>
+            <h3 style={{ margin: 0, ...designSystem.typography.h2 }}>Submit Timesheet</h3>
+            <Button variant="primary" onClick={() => setShowSubmitModal(true)}>Open Form</Button>
+          </div>
+          <p style={{ ...designSystem.typography.body, color: designSystem.colors.textSecondary, margin: 0 }}>
+            Record your daily hours and comp-off entries using the submission form.
+          </p>
+        </div>
 
-        <hr />
+        <Modal
+          isOpen={showSubmitModal}
+          onClose={() => setShowSubmitModal(false)}
+          title="Submit Timesheet"
+          footer={
+            <Button variant="secondary" onClick={() => setShowSubmitModal(false)}>Close</Button>
+          }
+        >
+          <TimesheetForm employeeId={employeeId} onSubmitted={() => { loadData(); setShowSubmitModal(false); }} />
+        </Modal>
 
-        {/* Weekly Hours Summary */}
-        <div style={{ marginBottom: "20px"}}>
-          <h3>Weekly Project Hours Summary</h3>
+        <hr style={{ border: `1px solid ${designSystem.colors.divider}`, margin: `${designSystem.spacing.lg} 0` }} />
+
+        <div style={{ marginBottom: designSystem.spacing.lg }}>
+          <h3 style={{ ...designSystem.typography.h2, margin: `0 0 ${designSystem.spacing.sm} 0`, color: designSystem.colors.text }}>Weekly Project Hours Summary</h3>
           {weeklySummary.length > 0 ? (
-            <table border="1" cellPadding="10" style={{ width: "80%", borderCollapse: "collapse", marginBottom: "20px"}}>
+            <div style={globalStyles.tableWrapper}>
+              <table style={{ ...globalStyles.table, ...globalStyles.tableWrapper }}>
               <thead>
-                <tr style={{ background: "#f2f2f2" }}>
-                  <th>Week</th>
-                  <th>Standard Hours</th>
-                  <th>Holiday Reduction</th>
-                  <th>Effective Standard</th>
-                  <th>Actual Hours</th>
-                  <th>Regular Hours</th>
-                  <th>Comp-Off Hours</th>
+                <tr style={{ ...globalStyles.tableHeader }}>
+                  <th style={{...globalStyles.tableheadercell}}>Week</th>
+                  <th style={{...globalStyles.tableheadercell}}>Standard Hours</th>
+                  <th style={{...globalStyles.tableheadercell}}>Holiday Reduction</th>
+                  <th style={{...globalStyles.tableheadercell}}>Effective Standard</th>
+                  <th style={{...globalStyles.tableheadercell}}>Actual Hours</th>
+                  <th style={{...globalStyles.tableheadercell}}>Regular Hours</th>
+                  <th style={{...globalStyles.tableheadercell}}>Comp-Off  Hours</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {weeklySummary.map(week => (
-                  <tr key={week.weekStart}>
-                    <td>{week.weekStart} to {week.weekEnd}</td>
-                    <td>40</td>
-                    <td>{week.holidayReduction} hrs</td>
-                    <td><strong>{week.standardHours}</strong></td>
-                    <td><strong>{week.actualHours}</strong></td>
-                    <td>{week.regularHours}</td>
-                    <td style={{ color: week.compOffHours > 0 ? "#e74c3c" : "#27ae60" }}>
+                  <tr key={week.weekStart} style={{ ...globalStyles.tableRowEven }}>
+                    <td style={{ ...globalStyles.tableCell }}>{week.weekStart} to {week.weekEnd}</td>
+                    <td style={{ ...globalStyles.tableCell }}>40</td>
+                    <td style={{ ...globalStyles.tableCell }}>{week.holidayReduction} hrs</td>
+                    <td style={{ ...globalStyles.tableCell }}><strong>{week.standardHours}</strong></td>
+                    <td style={{ ...globalStyles.tableCell }}><strong>{week.actualHours}</strong></td>
+                    <td style={{ ...globalStyles.tableCell }}>{week.regularHours}</td>
+                    <td style={{ ...globalStyles.tableCell, color: week.compOffHours > 0 ? designSystem.colors.error : designSystem.colors.success }}>
                       {week.compOffHours > 0 ? `${week.compOffHours} (needs approval)` : "0"}
                     </td>
-                    <td>
+                    <td style={{ ...globalStyles.tableCell }}>
                       {week.hasPendingApproval ? (
-                        <span style={{ color: "#f39c12", fontWeight: "bold" }}>Pending Approval</span>
+                        <span style={{ color: designSystem.colors.warning, fontWeight: "bold" }}>Pending Approval</span>
                       ) : week.actualHours >= week.standardHours ? (
-                        <span style={{ color: "#27ae60" }}>✓ Complete</span>
+                        <span style={{ color: designSystem.colors.success }}>Complete</span>
                       ) : (
-                        <span style={{ color: "#e74c3c" }}>{week.standardHours - week.actualHours} hrs short</span>
+                        <span style={{ color: designSystem.colors.error }}>{week.standardHours - week.actualHours} hrs short</span>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           ) : (
-            <p>No timesheets submitted yet.</p>
+            <p style={{ ...designSystem.typography.body, color: designSystem.colors.textSecondary }}>No timesheets submitted yet.</p>
           )}
         </div>
 
-        {/* Holiday List */}
-        <div style={{ marginBottom: "20px" }}>
-          <h3>Holidays</h3>
+        <div style={{ marginBottom: designSystem.spacing.lg }}>
+          <h3 style={{ ...designSystem.typography.h2, margin: `0 0 ${designSystem.spacing.sm} 0`, color: designSystem.colors.text }}>Holidays</h3>
           {holidays.length > 0 ? (
-            <table border="1" cellPadding="10" style={{ width: "80%", borderCollapse: "collapse", marginBottom: "20px" }}>
+            <div style={globalStyles.tableWrapper}>
+              <table style={{ ...globalStyles.table }}>
               <thead>
-                <tr style={{ background: "#f2f2f2" }}>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Impact</th>
+                <tr style={{ ...globalStyles.tableHeader }}>
+                  <th style={{ ...globalStyles.tableheadercell }}>Date</th>
+                  <th style={{ ...globalStyles.tableheadercell }}>Description</th>
+                  <th style={{ ...globalStyles.tableheadercell }}>Impact</th>
                 </tr>
               </thead>
               <tbody>
@@ -237,44 +258,47 @@ const EmployeeDashboard = () => {
                   const holidayDate = new Date(h.date);
                   const isWeekendDay = isWeekend(holidayDate);
                   return (
-                    <tr key={h.holidayId}>
-                      <td>{holidayDate.toLocaleDateString()}</td>
-                      <td>{h.description}</td>
-                      <td>{isWeekendDay ? "Weekend (no impact)" : "Reduces week by 8 hrs"}</td>
+                    <tr key={h.holidayId} style={{ ...globalStyles.tableRowEven }}>
+                      <td style={{ ...globalStyles.tableCell }}>{holidayDate.toLocaleDateString()}</td>
+                      <td style={{ ...globalStyles.tableCell }}>{h.description}</td>
+                      <td style={{ ...globalStyles.tableCell }}>{isWeekendDay ? "Weekend (no impact)" : "Reduces week by 8 hrs"}</td>
                     </tr>
                   );
                 })}
-              </tbody>
-            </table>
+</tbody>
+              </table>
+            </div>
           ) : (
-            <p>No holidays configured.</p>
+            <p style={{ ...designSystem.typography.body, color: designSystem.colors.textSecondary }}>No holidays configured.</p>
           )}
         </div>
 
-        <hr />
+        <hr style={{ border: `1px solid ${designSystem.colors.divider}`, margin: `${designSystem.spacing.lg} 0` }} />
         
-        <h3>Your Allocations</h3>
+        <h3 style={{ ...designSystem.typography.h2, margin: `0 0 ${designSystem.spacing.sm} 0`, color: designSystem.colors.text }}>Your Allocations</h3>
         {allocations.length > 0 ? (
-          <table border="1" cellPadding="10" style={{ width: "80%", borderCollapse: "collapse", marginBottom: "20px" }}>
+          <div style={globalStyles.tableWrapper}>
+            <table style={{ ...globalStyles.table }}>
             <thead>
-              <tr style={{ background: "#f2f2f2" }}>
-                <th>Project</th>
-                <th>Allocation %</th>
-                <th>Start Date</th>
+              <tr style={{ ...globalStyles.tableHeader }}>
+                <th style={{ ...globalStyles.tableheadercell }}>Project</th>
+                <th style={{ ...globalStyles.tableheadercell }}>Allocation %</th>
+                <th style={{ ...globalStyles.tableheadercell }}>Start Date</th>
               </tr>
             </thead>
             <tbody>
               {allocations.slice(0, itemsPerPage).map(a => (
-                <tr key={a.allocationId || a.id}>
-                  <td>{projects.find(p => p.projectId === a.projectId)?.projectName || a.projectId}</td>
-                  <td>{a.allocationPercent || a.allocationPercentage}%</td>
-                  <td>{a.startDate ? new Date(a.startDate).toLocaleDateString() : "N/A"}</td>
+                <tr key={a.allocationId || a.id} style={{ ...globalStyles.tableRowEven }}>
+                  <td style={{ ...globalStyles.tableCell }}>{projects.find(p => p.projectId === a.projectId)?.projectName || a.projectId}</td>
+                  <td style={{ ...globalStyles.tableCell }}>{a.allocationPercent || a.allocationPercentage}%</td>
+                  <td style={{ ...globalStyles.tableCell }}>{a.startDate ? new Date(a.startDate).toLocaleDateString() : "N/A"}</td>
                 </tr>
               ))}
-            </tbody>
-          </table>
+</tbody>
+            </table>
+          </div>
         ) : (
-          <p>No project allocations.</p>
+          <p style={{ ...designSystem.typography.body, color: designSystem.colors.textSecondary }}>No project allocations.</p>
         )}
 
         <Pagination 
@@ -283,48 +307,50 @@ const EmployeeDashboard = () => {
           onPageChange={setTimesheetPage} 
         />
 
-        <hr />
+        <hr style={{ border: `1px solid ${designSystem.colors.divider}`, margin: `${designSystem.spacing.lg} 0` }} />
 
-        <h3>Your Timesheets</h3>
+        <h3 style={{ ...designSystem.typography.h2, margin: `0 0 ${designSystem.spacing.sm} 0`, color: designSystem.colors.text }}>Your Timesheets</h3>
         {paginatedTimesheets.length > 0 ? (
           <>
-            <table border="1" cellPadding="10" style={{ width: "80%", borderCollapse: "collapse" }}>
+            <div style={globalStyles.tableWrapper}>
+              <table style={{ ...globalStyles.table }}>
               <thead>
-                <tr style={{ background: "#f2f2f2" }}>
-                  <th>Date</th>
-                  <th>Project</th>
-                  <th>Hours Worked</th>
-                  <th>Description</th>
-                  <th>Status</th>
+                <tr style={{ ...globalStyles.tableHeader }}>
+                  <th style={{ ...globalStyles.tableheadercell }}>Date</th>
+                  <th style={{ ...globalStyles.tableheadercell }}>Project</th>
+                  <th style={{ ...globalStyles.tableheadercell }}>Hours Worked</th>
+                  <th style={{ ...globalStyles.tableheadercell }}>Description</th>
+                  <th style={{ ...globalStyles.tableheadercell }}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedTimesheets.map(t => (
-                  <tr key={t.id}>
-                    <td>{new Date(t.date).toLocaleDateString()}</td>
-                    <td>{projects.find(p => p.projectId === t.projectId)?.projectName || t.projectId}</td>
-                    <td>
+                  <tr key={t.id} style={{ ...globalStyles.tableRowEven }}>
+                    <td style={{ ...globalStyles.tableCell }}>{new Date(t.date).toLocaleDateString()}</td>
+                    <td style={{ ...globalStyles.tableCell }}>{projects.find(p => p.projectId === t.projectId)?.projectName || t.projectId}</td>
+                    <td style={{ ...globalStyles.tableCell }}>
                       {t.hoursWorked}
                       {Number(t.hoursWorked) > 8 && (
-                        <span style={{ color: "#e74c3c", fontSize: "0.8em", marginLeft: "5px" }}>
+                        <span style={{ color: designSystem.colors.error, fontSize: "0.8em", marginLeft: "5px" }}>
                           ({Number(t.hoursWorked) - 8} comp-off)
                         </span>
                       )}
                     </td>
-                    <td>{t.entries?.[0]?.description}</td>
-                    <td>
+                    <td style={{ ...globalStyles.tableCell }}>{t.entries?.[0]?.description}</td>
+                    <td style={{ ...globalStyles.tableCell }}>
                       {t.approvalStatus}
                       {t.approvalStatus === "Pending" && (
-                        <span style={{ color: "#f39c12", fontSize: "0.8em" }}> (awaiting approval)</span>
+                        <span style={{ color: designSystem.colors.warning, fontSize: "0.8em" }}> (awaiting approval)</span>
                       )}
                       {Number(t.hoursWorked) > 8 && t.approvalStatus === "Approved" && (
-                        <span style={{ color: "#27ae60", fontSize: "0.8em", display: "block" }}>Comp-off approved</span>
+                        <span style={{ color: designSystem.colors.success, fontSize: "0.8em", display: "block" }}>Comp-off approved</span>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
             <Pagination 
               currentPage={timesheetPage} 
               totalPages={timesheetPages} 
@@ -332,7 +358,7 @@ const EmployeeDashboard = () => {
             />
           </>
         ) : (
-          <p>No timesheets found.</p>
+          <p style={{ ...designSystem.typography.body, color: designSystem.colors.textSecondary }}>No timesheets found.</p>
         )}
       </div>
     </div>

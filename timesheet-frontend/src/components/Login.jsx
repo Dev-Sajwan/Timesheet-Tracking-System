@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login } from "../Services/Api";
 import { jwtDecode } from "jwt-decode";
+import { designSystem, globalStyles } from "../styles/designSystem";
 
 const Login = () => {
   const [userName, setUserName] = useState("");
@@ -18,7 +19,6 @@ const Login = () => {
       
       const decoded = jwtDecode(token);
       
-      // Store employee information from claims if available
       if (decoded.employeeId) {
          localStorage.setItem("employeeId", decoded.employeeId);
       }
@@ -43,38 +43,136 @@ const Login = () => {
     }
   };
 
+  const inputStyle = {
+    ...globalStyles.input,
+    marginBottom: designSystem.spacing.md,
+  };
+
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#f5f6fa" }}>
-      <div style={{ background: "white", padding: "40px", borderRadius: "10px", boxShadow: "0px 0px 10px rgba(0,0,0,0.1)", width: "350px" }}>
-        <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Login</h2>
-        {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: `linear-gradient(135deg, ${designSystem.colors.primary} 0%, ${designSystem.colors.primaryDark} 100%)`,
+        padding: designSystem.spacing.md,
+      }}
+    >
+      <div
+        style={{
+          background: designSystem.colors.surface,
+          borderRadius: designSystem.radius,
+          boxShadow: designSystem.shadows.lg,
+          padding: designSystem.spacing.xl,
+          width: "100%",
+          maxWidth: "420px",
+        }}
+      >
+        <h2 style={{ 
+          textAlign: "center", 
+          marginBottom: designSystem.spacing.sm,
+          color: designSystem.colors.text,
+          ...designSystem.typography.h1,
+        }}>
+          Employee Dashboard
+        </h2>
+        <p style={{ 
+          textAlign: "center", 
+          color: designSystem.colors.textSecondary,
+          marginBottom: designSystem.spacing.lg,
+          ...designSystem.typography.body,
+        }}>
+          Sign in to your account
+        </p>
+        
+        {error && (
+          <div style={{
+            background: '#FFEBEE',
+            color: designSystem.colors.error,
+            padding: designSystem.spacing.sm,
+            borderRadius: designSystem.radius,
+            marginBottom: designSystem.spacing.md,
+            textAlign: "center",
+            fontSize: "14px",
+          }}>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: "15px" }}>
-            <label>Username</label>
+          <div style={{ marginBottom: designSystem.spacing.md }}>
+            <label style={{ 
+              display: "block", 
+              marginBottom: "4px",
+              color: designSystem.colors.text,
+              ...designSystem.typography.bodyMedium,
+            }}>
+              Username
+            </label>
             <input
               type="text"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
-              style={{ width: "100%", padding: "10px", marginTop: "5px", border: "1px solid #ccc", borderRadius: "5px" }}
+              style={inputStyle}
+              placeholder="Enter your username"
               required
             />
           </div>
-          <div style={{ marginBottom: "20px" }}>
-            <label>Password</label>
+
+          <div style={{ marginBottom: designSystem.spacing.lg }}>
+            <label style={{ 
+              display: "block", 
+              marginBottom: "4px",
+              color: designSystem.colors.text,
+              ...designSystem.typography.bodyMedium,
+            }}>
+              Password
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={{ width: "100%", padding: "10px", marginTop: "5px", border: "1px solid #ccc", borderRadius: "5px" }}
+              style={inputStyle}
+              placeholder="Enter your password"
               required
             />
           </div>
-          <button type="submit" style={{ width: "100%", padding: "10px", background: "#007bff", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" }}>
+
+          <button
+            type="submit"
+            style={{
+              ...globalStyles.button.primary,
+              width: "100%",
+              marginBottom: designSystem.spacing.md,
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-1px)";
+              e.currentTarget.style.boxShadow = designSystem.shadows.md;
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = designSystem.shadows.sm;
+            }}
+          >
             Login
           </button>
         </form>
-        <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <p style={{ color: "#666" }}>Forgot password? <Link to="/forgot-password" style={{ color: "#007bff", textDecoration: "none", fontWeight: "500" }}>Reset it</Link></p>
+
+        <div style={{ textAlign: "center" }}>
+          <p style={{ color: designSystem.colors.textSecondary, ...designSystem.typography.body }}>
+            Forgot password?{" "}
+            <Link 
+              to="/forgot-password" 
+              style={{ 
+                color: designSystem.colors.primary, 
+                textDecoration: "none",
+                fontWeight: 500,
+              }}
+            >
+              Reset it
+            </Link>
+          </p>
         </div>
       </div>
     </div>

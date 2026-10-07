@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import EmployeeList from "./EmployeeList";
-import ProjectList from "./ProjectList";
 import AllocationList from "./AllocationList";
 import TimesheetForm from "./TimesheetForm";
 import HolidayList from "./HolidayList";
 import { useNavigate } from "react-router-dom";
+import { designSystem } from "../styles/designSystem";
+import Button from "./Button";
 
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("timesheets");
@@ -18,38 +19,35 @@ const ManagerDashboard = () => {
     navigate("/");
   };
 
+  const tabs = [
+    { id: "timesheets", label: "Review Timesheets", icon: "🕒" },
+    { id: "employees", label: "Employees", icon: "👤" },
+    { id: "allocations", label: "Allocations", icon: "📊" },
+    { id: "holidays", label: "Holidays", icon: "📅" },
+  ];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "Arial, sans-serif" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", background: "#34495e", color: "white", padding: "10px 20px" }}>
-        <h2>Manager Dashboard</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-           <span>{fullName}</span>
-           <button onClick={handleLogout} style={{ padding: "5px 15px", background: "#e74c3c", color: "white", border: "none", borderRadius: "5px", cursor: "pointer" }}>Logout</button>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "Roboto, Arial, sans-serif" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: designSystem.colors.primary, color: designSystem.colors.white, padding: `${designSystem.spacing.sm} ${designSystem.spacing.lg}` }}>
+        <h2 style={{ margin: 0, ...designSystem.typography.h1, fontSize: "18px", fontWeight: 700 }}>Manager Dashboard</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: designSystem.spacing.md }}>
+          <span style={{ fontSize: "14px" }}>{fullName}</span>
+          <Button variant="secondary" size="small" onClick={handleLogout} style={{ background: designSystem.colors.error, color: designSystem.colors.white, border: "none" }}>Logout</Button>
         </div>
       </div>
-      
+
       <div style={{ display: "flex", flex: 1 }}>
-        {/* Sidebar */}
-        <div style={{ width: "220px", background: "#2c3e50", color: "#ecf0f1", padding: "20px" }}>
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "timesheets" ? "bold" : "normal" }} onClick={() => setActiveTab("timesheets")}>
-              🕒 Review Timesheets
-            </li>
-            <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "employees" ? "bold" : "normal" }} onClick={() => setActiveTab("employees")}>
-              👤 Employees
-            </li>
-            <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "allocations" ? "bold" : "normal" }} onClick={() => setActiveTab("allocations")}>
-              📊 Allocations
-            </li>
-            <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "holidays" ? "bold" : "normal" }} onClick={() => setActiveTab("holidays")}>
-              📅 Holidays
-            </li>
+        <div style={{ width: "220px", background: designSystem.colors.primaryDark, color: designSystem.colors.white, padding: designSystem.spacing.md }}>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {tabs.map(tab => (
+              <li key={tab.id} style={{ margin: `${designSystem.spacing.sm} 0`, cursor: "pointer", fontWeight: activeTab === tab.id ? "bold" : "normal" }} onClick={() => setActiveTab(tab.id)}>
+                {tab.icon} {tab.label}
+              </li>
+            ))}
           </ul>
         </div>
 
-        {/* Main Content */}
-        <div style={{ flex: 1, padding: "30px", background: "#ecf0f1", overflowY: "auto" }}>
+        <div style={{ flex: 1, padding: designSystem.spacing.lg, background: designSystem.colors.background, overflowY: "auto" }}>
           {activeTab === "timesheets" && <TimesheetForm />}
           {activeTab === "employees" && <EmployeeList />}
           {activeTab === "allocations" && <AllocationList />}

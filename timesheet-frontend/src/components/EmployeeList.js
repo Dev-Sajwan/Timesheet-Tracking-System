@@ -1,22 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { getEmployees, addEmployee, updateEmployee, getProjects, getClients, assignEmployeeRole, resetEmployeePassword } from "../Services/Api";
+import { getEmployees, addEmployee, updateEmployee, assignEmployeeRole, resetEmployeePassword } from "../Services/Api";
 import { jwtDecode } from "jwt-decode";
+import { designSystem, globalStyles } from "../styles/designSystem";
+import Modal from "./Modal";
+import Button from "./Button";
 
 export default function EmployeeList() {
   const [employees, setEmployees] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [clients, setClients] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [newEmployee, setNewEmployee] = useState({
-    name: "",
-    email: "",
-    department: "",
-    status: ""
-  });
+  const [newEmployee, setNewEmployee] = useState({ name: "", email: "", department: "", status: "" });
   const [assigningRole, setAssigningRole] = useState(null);
   const [selectedRole, setSelectedRole] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -28,8 +24,6 @@ export default function EmployeeList() {
   useEffect(() => {
     checkAdminRole();
     loadEmployees();
-    loadProjects();
-    loadClients();
   }, []);
 
   const checkAdminRole = () => {
@@ -51,16 +45,6 @@ export default function EmployeeList() {
     setEmployees(res.data);
   };
 
-  const loadProjects = async () => {
-    const res = await getProjects();
-    setProjects(res.data);
-  };
-
-  const loadClients = async () => {
-    const res = await getClients();
-    setClients(res.data);
-  };
-
   const handleAddEmployee = async () => {
     await addEmployee(newEmployee);
     setNewEmployee({ name: "", email: "", department: "", status: "" });
@@ -69,7 +53,6 @@ export default function EmployeeList() {
   };
 
   const handleUpdateEmployee = async () => {
-    // Only send allowed fields for profile update (not Roles)
     const updateData = {
       id: editingEmployee.id,
       name: editingEmployee.name,
@@ -104,34 +87,12 @@ export default function EmployeeList() {
     }
   };
 
-  const openResetPassword = (emp) => {
-    setResettingPassword(emp.id);
-    setNewPassword("");
-  };
-
-  const closeResetPassword = () => {
-    setResettingPassword(null);
-    setNewPassword("");
-  };
-
-  const openAssignRole = (emp) => {
-    setAssigningRole(emp.id);
-    setSelectedRole(emp.Roles?.[0] || "");
-  };
-
-  const closeAssignRole = () => {
-    setAssigningRole(null);
-    setSelectedRole("");
-  };
-
-  // Filter employees by search term
   const filteredEmployees = employees.filter(
     (emp) =>
       emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination logic
   const indexOfLastEmployee = currentPage * employeesPerPage;
   const indexOfFirstEmployee = indexOfLastEmployee - employeesPerPage;
   const currentEmployees = filteredEmployees.slice(indexOfFirstEmployee, indexOfLastEmployee);
@@ -142,187 +103,181 @@ export default function EmployeeList() {
     return roles.join(", ");
   };
 
+  const labelStyle = { display: "block", marginBottom: designSystem.spacing.xs, color: designSystem.colors.text, ...designSystem.typography.bodyMedium };
+  const inputStyle = { ...globalStyles.input, marginBottom: designSystem.spacing.sm };
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Employees</h2>
-
-      {/* Add Employee Button */}
-      <button onClick={() => setShowForm(!showForm)} padding="10px" style={{ marginRight: "15px" }}>
-        {showForm ? "Cancel" : "➕ Add Employee"}
-      </button>
-
-      {/* Add Employee Form */}
-      {showForm && (
-        <div style={{ marginTop: "15px", border: "1px solid #ccc", padding: "10px" }}>
-          <input
-            placeholder="Name"
-            value={newEmployee.name}
-            onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
-            style={{ marginRight: "5px" }}
-          />
-          <input
-            placeholder="Email"
-            value={newEmployee.email}
-            onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
-            style={{ marginRight: "5px" }}
-          />
-          <input
-            placeholder="Department"
-            value={newEmployee.department}
-            onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
-            style={{ marginRight: "5px" }}
-          />
-          <select
-            value={newEmployee.status}
-            onChange={(e) => setNewEmployee({ ...newEmployee, status: e.target.value })}
-            style={{ marginRight: "5px" }}
-          >
-            <option value="">Select Status</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-          <button onClick={handleAddEmployee}>Save Employee</button>
-        </div>
-      )}
-
-      {/* Search Bar */}
-      <input
-        type="text"
-        placeholder="Search by name or email..."
-        value={searchTerm}
-        onChange={(e) => {
-          setSearchTerm(e.target.value);
-          setCurrentPage(1);
-        }}
-        style={{ width: "300px", padding: "8px", margin: "15px 0" }}
-      />
-
-      {/* Employee Table */}
-      <table border="1" width="100%" cellPadding="8">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Roles</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentEmployees.map((emp) => (
-            <tr key={emp.id}>
-              <td>{emp.name}</td>
-              <td>{emp.email}</td>
-              <td>{formatRoles(emp.roles)}</td>
-              <td>{emp.status}</td>
-              <td>
-                <button onClick={() => setSelectedEmployee(emp)}>View</button>&nbsp;
-                <button onClick={() => setEditingEmployee(emp)}>Edit</button>
-                {isAdmin && (
-                  <>
-                    &nbsp;
-                    {assigningRole === emp.id ? (
-                      <>
-                        <select
-                          value={selectedRole}
-                          onChange={(e) => setSelectedRole(e.target.value)}
-                          style={{ marginRight: "5px" }}
-                        >
-                          <option value="">Select Role</option>
-                          <option value="Admin">Admin</option>
-                          <option value="Manager">Manager</option>
-                          <option value="Employee">Employee</option>
-                        </select>
-                        <button onClick={() => handleAssignRole(emp.id, selectedRole)} style={{ marginRight: "5px" }}>Assign</button>
-                        <button onClick={closeAssignRole}>Cancel</button>
-                      </>
-                    ) : (
-                      <button onClick={() => openAssignRole(emp)}>Assign Role</button>
-                    )}
-                    &nbsp;
-                    {resettingPassword === emp.id ? (
-                      <>
-                        <input
-                          type="password"
-                          placeholder="New Password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          style={{ marginRight: "5px" }}
-                        />
-                        <button onClick={() => handleResetPassword(emp.id, newPassword)}>Reset</button>
-                        <button onClick={closeResetPassword}>Cancel</button>
-                      </>
-                    ) : (
-                      <button onClick={() => openResetPassword(emp)}>Reset Password</button>
-                    )}
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Pagination */}
-      <div style={{ marginTop: "10px" }}>
-        <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>
-          Prev
-        </button>
-        <span> Page {currentPage} of {totalPages} </span>
-        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)}>
-          Next
-        </button>
+    <div style={{ padding: designSystem.spacing.lg, maxWidth: "1100px", margin: "0 auto", fontFamily: "Roboto, Arial, sans-serif" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md }}>
+        <h2 style={{ margin: 0, ...designSystem.typography.h1, color: designSystem.colors.text }}>Employees</h2>
+        <Button variant="primary" onClick={() => setShowForm(!showForm)}>
+          {showForm ? "Cancel" : "+ Add Employee"}
+        </Button>
       </div>
 
-      {/* Employee Details */}
-      {selectedEmployee && (
-        <div style={{ marginTop: "20px", border: "1px solid #ccc", padding: "10px" }}>
-          <h3>Employee Details</h3>
-          <p><strong>Name:</strong> {selectedEmployee.name}</p>
-          <p><strong>Email:</strong> {selectedEmployee.email}</p>
-          <p><strong>Roles:</strong> {formatRoles(selectedEmployee.roles)}</p>
-          <p><strong>Status:</strong> {selectedEmployee.status}</p>
-          <p><strong>Department:</strong> {selectedEmployee.department || "N/A"}</p>
-          <button onClick={() => setSelectedEmployee(null)}>Close</button>
+      {showForm && (
+        <div style={{ ...globalStyles.card, marginBottom: designSystem.spacing.md }}>
+          <div style={{ display: "flex", gap: designSystem.spacing.sm, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div style={{ flex: 1, minWidth: "140px" }}>
+              <label style={labelStyle}>Name</label>
+              <input placeholder="Name" value={newEmployee.name} onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1, minWidth: "180px" }}>
+              <label style={labelStyle}>Email</label>
+              <input placeholder="Email" value={newEmployee.email} onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1, minWidth: "120px" }}>
+              <label style={labelStyle}>Department</label>
+              <input placeholder="Department" value={newEmployee.department} onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })} style={inputStyle} />
+            </div>
+            <div style={{ flex: 1, minWidth: "120px" }}>
+              <label style={labelStyle}>Status</label>
+              <select value={newEmployee.status} onChange={(e) => setNewEmployee({ ...newEmployee, status: e.target.value })} style={inputStyle}>
+                <option value="">Select</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <Button variant="primary" onClick={handleAddEmployee}>Save</Button>
+          </div>
         </div>
       )}
 
-      {/* Edit Employee Form */}
-      {editingEmployee && (
-        <div style={{ marginTop: "20px", border: "1px solid #ccc", padding: "10px" }}>
-          <h3>Edit Employee</h3>
-          <input
-            placeholder="Name"
-            value={editingEmployee.name}
-            onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
-            style={{ marginRight: "5px" }}
-          />
-          <input
-            placeholder="Email"
-            value={editingEmployee.email}
-            onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
-            style={{ marginRight: "5px" }}
-          />
-          <input
-            placeholder="Department"
-            value={editingEmployee.department || ""}
-            onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
-            style={{ marginRight: "5px" }}
-          />
-          <select
-            value={editingEmployee.status || ""}
-            onChange={(e) => setEditingEmployee({ ...editingEmployee, status: e.target.value })}
-            style={{ marginRight: "5px" }}
-          >
-            <option value="">Status</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-          <p><em>Roles are managed separately via "Assign Role" button (Admin only)</em></p>
-          <button onClick={handleUpdateEmployee} style={{ marginRight: "5px" }}>Update Employee</button>
-          <button onClick={() => setEditingEmployee(null)}>Cancel</button>
-        </div>
-      )}
+      <div style={{ marginBottom: designSystem.spacing.md }}>
+        <input
+          type="text"
+          placeholder="Search by name or email..."
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          style={{ ...inputStyle, width: "100%", maxWidth: "400px" }}
+        />
+      </div>
+
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ ...globalStyles.table }}>
+          <thead>
+            <tr style={{ ...globalStyles.tableHeader }}>
+              <th style={globalStyles.tableheadercell}>Name</th>
+              <th style={globalStyles.tableheadercell}>Email</th>
+              <th style={globalStyles.tableheadercell}>Roles</th>
+              <th style={globalStyles.tableheadercell}>Status</th>
+              <th style={globalStyles.tableheadercell}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentEmployees.map((emp) => (
+              <tr key={emp.id} style={{ ...globalStyles.tableRowEven }}>
+                <td style={{ ...globalStyles.tableCell }}>{emp.name}</td>
+                <td style={{ ...globalStyles.tableCell }}>{emp.email}</td>
+                <td style={{ ...globalStyles.tableCell }}>{formatRoles(emp.roles)}</td>
+                <td style={{ ...globalStyles.tableCell }}>{emp.status}</td>
+                <td style={{ ...globalStyles.tableCell }}>
+                  <Button variant="secondary" size="small" onClick={() => setSelectedEmployee(emp)} style={{ marginRight: designSystem.spacing.xs }}>View</Button>
+                  <Button variant="secondary" size="small" onClick={() => setEditingEmployee(emp)} style={{ marginRight: designSystem.spacing.xs }}>Edit</Button>
+                  {isAdmin && (
+                    <>
+                      <Button variant="secondary" size="small" onClick={() => setAssigningRole(emp.id)} style={{ marginRight: designSystem.spacing.xs }}>Role</Button>
+                      <Button variant="secondary" size="small" onClick={() => setResettingPassword(emp.id)}>Reset Password</Button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ marginTop: designSystem.spacing.md, display: "flex", gap: designSystem.spacing.sm, alignItems: "center" }}>
+        <Button variant="secondary" size="small" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Prev</Button>
+        <span style={{ ...designSystem.typography.body }}>Page {currentPage} of {totalPages}</span>
+        <Button variant="secondary" size="small" disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)}>Next</Button>
+      </div>
+
+      {/* View Employee Modal */}
+      <Modal
+        isOpen={!!selectedEmployee}
+        onClose={() => setSelectedEmployee(null)}
+        title="Employee Details"
+        footer={<Button variant="secondary" onClick={() => setSelectedEmployee(null)}>Close</Button>}
+      >
+        {selectedEmployee && (
+          <div>
+            <p><strong>Name:</strong> {selectedEmployee.name}</p>
+            <p><strong>Email:</strong> {selectedEmployee.email}</p>
+            <p><strong>Roles:</strong> {formatRoles(selectedEmployee.roles)}</p>
+            <p><strong>Status:</strong> {selectedEmployee.status}</p>
+            <p><strong>Department:</strong> {selectedEmployee.department || "N/A"}</p>
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit Employee Modal */}
+      <Modal
+        isOpen={!!editingEmployee}
+        onClose={() => setEditingEmployee(null)}
+        title="Edit Employee"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditingEmployee(null)}>Cancel</Button>
+            <Button variant="primary" onClick={handleUpdateEmployee}>Update</Button>
+          </>
+        }
+      >
+        {editingEmployee && (
+          <div>
+            <label style={labelStyle}>Name</label>
+            <input placeholder="Name" value={editingEmployee.name} onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })} style={inputStyle} />
+            <label style={labelStyle}>Email</label>
+            <input placeholder="Email" value={editingEmployee.email} onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })} style={inputStyle} />
+            <label style={labelStyle}>Department</label>
+            <input placeholder="Department" value={editingEmployee.department || ""} onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })} style={inputStyle} />
+            <label style={labelStyle}>Status</label>
+            <select value={editingEmployee.status || ""} onChange={(e) => setEditingEmployee({ ...editingEmployee, status: e.target.value })} style={inputStyle}>
+              <option value="">Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+            <p style={{ ...designSystem.typography.caption, color: designSystem.colors.textSecondary }}>Roles are managed via "Role" button (Admin only)</p>
+          </div>
+        )}
+      </Modal>
+
+      {/* Assign Role Modal */}
+      <Modal
+        isOpen={!!assigningRole}
+        onClose={() => { setAssigningRole(null); setSelectedRole(""); }}
+        title="Assign Role"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => { setAssigningRole(null); setSelectedRole(""); }}>Cancel</Button>
+            <Button variant="primary" onClick={() => handleAssignRole(assigningRole, selectedRole)}>Assign</Button>
+          </>
+        }
+      >
+        <label style={labelStyle}>Select Role</label>
+        <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} style={inputStyle}>
+          <option value="">Select Role</option>
+          <option value="Admin">Admin</option>
+          <option value="Manager">Manager</option>
+          <option value="Employee">Employee</option>
+        </select>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        isOpen={!!resettingPassword}
+        onClose={() => { setResettingPassword(null); setNewPassword(""); }}
+        title="Reset Password"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => { setResettingPassword(null); setNewPassword(""); }}>Cancel</Button>
+            <Button variant="primary" onClick={() => handleResetPassword(resettingPassword, newPassword)}>Reset</Button>
+          </>
+        }
+      >
+        <label style={labelStyle}>New Password</label>
+        <input type="password" placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} style={inputStyle} />
+      </Modal>
     </div>
   );
 }
