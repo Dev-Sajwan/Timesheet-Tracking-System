@@ -1,12 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { getEmployees, addEmployee, updateEmployee, assignEmployeeRole, resetEmployeePassword } from "../Services/Api";
+import React, { useEffect, useState, useRef } from "react";
+import { getEmployees, addEmployee, updateEmployee, assignEmployeeRole, resetEmployeePassword, getRoles} from "../Services/Api";
 import { jwtDecode } from "jwt-decode";
 import { designSystem, globalStyles } from "../styles/designSystem";
 import Modal from "./Modal";
 import Button from "./Button";
+import * as XLSX from "xlsx";
+import axios from "axios";
+
+export const uploadBulkEmployees = (data) => {
+    const token = localStorage.getItem("token");
+    return axios.post("http://localhost:5162/api/employees/bulk", data, { headers: { Authorization: `Bearer ${token}` } });
+};
 
 export default function EmployeeList() {
   const [employees, setEmployees] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -18,12 +26,21 @@ export default function EmployeeList() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(null);
   const [newPassword, setNewPassword] = useState("");
+  
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [bulkData, setBulkData] = useState([]);
+  const [bulkHeaders, setBulkHeaders] = useState([]);
+  const [columnMapping, setColumnMapping] = useState({ Name: "", Email: "", Department: "" });
+  const [bulkErrors, setBulkErrors] = useState([]);
+  const [showErrorLog, setShowErrorLog] = useState(false);
+  const fileInputRef = useRef(null);
 
   const employeesPerPage = 8;
 
   useEffect(() => {
     checkAdminRole();
     loadEmployees();
+    loadRoles();
   }, []);
 
   const checkAdminRole = () => {
@@ -31,9 +48,9 @@ export default function EmployeeList() {
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
-        const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
-        setIsAdmin(rolesArray.includes("Admin"));
+        // Check for System Admin profile (takes precedence over role)
+        const isSystemAdmin = decoded["isSystemAdmin"] === "true" || decoded["isSystemAdmin"] === true;
+        setIsAdmin(isSystemAdmin);
       } catch (e) {
         setIsAdmin(false);
       }
@@ -43,6 +60,11 @@ export default function EmployeeList() {
   const loadEmployees = async () => {
     const res = await getEmployees();
     setEmployees(res.data);
+  };
+
+  const loadRoles = async () => {
+    const res = await getRoles();
+    setRoles(res.data);
   };
 
   const handleAddEmployee = async () => {
@@ -87,6 +109,104 @@ export default function EmployeeList() {
     }
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const bstr = evt.target.result;
+      const wb = XLSX.read(bstr, { type: "binary" });
+      const wsname = wb.SheetNames[0];
+      const ws = wb.Sheets[wsname];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      if (data.length > 0) {
+          const headers = data[0];
+          setBulkHeaders(headers);
+          
+          let initialMapping = { Name: "", Email: "", Department: "" };
+          headers.forEach(h => {
+              if(h.toLowerCase().includes("name")) initialMapping.Name = h;
+              if(h.toLowerCase().includes("email")) initialMapping.Email = h;
+              if(h.toLowerCase().includes("dept") || h.toLowerCase().includes("department")) initialMapping.Department = h;
+          });
+          setColumnMapping(initialMapping);
+
+          const rows = data.slice(1).map(row => {
+              let obj = {};
+              headers.forEach((h, i) => obj[h] = row[i]);
+              return obj;
+          });
+          setBulkData(rows);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleBulkSubmit = async () => {
+    if (!columnMapping.Name || !columnMapping.Email) {
+        alert("Name and Email mappings are required.");
+        return;
+    }
+    
+    const validEmployees = [];
+    const errorLog = [];
+    
+    bulkData.forEach((row, index) => {
+        const name = row[columnMapping.Name];
+        const email = row[columnMapping.Email];
+        const department = row[columnMapping.Department] || "";
+        
+        if (!name || !email) {
+            errorLog.push({
+                row: index + 2, // +2 because data starts at row 2 (after header)
+                name: name || "MISSING",
+                email: email || "MISSING",
+                department: department,
+                reason: "Missing required field: " + (!name ? "Name" : "") + (!name && !email ? " and " : "") + (!email ? "Email" : "")
+            });
+        } else {
+            validEmployees.push({
+                name: name,
+                email: email,
+                department: department,
+                status: "Active"
+            });
+        }
+    });
+    
+    setBulkErrors(errorLog);
+    
+    if (validEmployees.length === 0) {
+        alert("No valid employees to upload. All rows have missing Name or Email.");
+        setShowErrorLog(true);
+        return;
+    }
+    
+    if (errorLog.length > 0) {
+        const confirmUpload = window.confirm(
+            `${errorLog.length} row(s) have missing Name or Email and will be skipped.\n\n` +
+            `Do you want to upload the ${validEmployees.length} valid employee(s)?`
+        );
+        if (!confirmUpload) {
+            return;
+        }
+    }
+
+    try {
+        await uploadBulkEmployees(validEmployees);
+        alert(`Upload successful! ${validEmployees.length} employee(s) uploaded.`);
+        setShowBulkUpload(false);
+        setBulkData([]);
+        setBulkHeaders([]);
+        setBulkErrors([]);
+        loadEmployees();
+    } catch(e) {
+        console.error(e);
+        alert("Failed bulk upload: " + (e.response?.data?.message || e.message));
+    }
+  };
+
   const filteredEmployees = employees.filter(
     (emp) =>
       emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -110,10 +230,99 @@ export default function EmployeeList() {
     <div style={{ padding: designSystem.spacing.lg, maxWidth: "1100px", margin: "0 auto", fontFamily: "Roboto, Arial, sans-serif" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md }}>
         <h2 style={{ margin: 0, ...designSystem.typography.h1, color: designSystem.colors.text }}>Employees</h2>
-        <Button variant="primary" onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Cancel" : "+ Add Employee"}
-        </Button>
+        <div>
+          <Button variant="secondary" onClick={() => setShowBulkUpload(!showBulkUpload)} style={{ marginRight: designSystem.spacing.sm }}>
+            Bulk Upload
+          </Button>
+          <Button variant="primary" onClick={() => setShowForm(!showForm)}>
+            {showForm ? "Cancel" : "+ Add Employee"}
+          </Button>
+        </div>
       </div>
+
+      {showBulkUpload && (
+        <div style={{ ...globalStyles.card, marginBottom: designSystem.spacing.sm }}>
+            <h3 style={designSystem.typography.h3}>Bulk Upload (.csv, .xls, .xlsx)</h3>
+            <input type="file" accept=".csv, .xls, .xlsx" ref={fileInputRef} onChange={handleFileUpload} style={{marginBottom: designSystem.spacing.sm}} />
+            
+            {bulkHeaders.length > 0 && (
+                <div>
+                    <h4 style={{marginTop: designSystem.spacing.sm}}>Map Columns</h4>
+                    <div style={{display: 'flex', gap: designSystem.spacing.md, flexWrap: 'wrap'}}>
+                        <div style={{ ...designSystem.typography.h3}}>
+                            <label style={labelStyle}>*Existing columns</label> 
+                            <label style={labelStyle}>Match uploaded file <br/>with existing columns</label>
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Name Column</label>
+                            <select value={columnMapping.Name} onChange={e => setColumnMapping({...columnMapping, Name: e.target.value})} style={inputStyle}>
+                                <option value="">-Select-</option>
+                                {bulkHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Email Column</label>
+                            <select value={columnMapping.Email} onChange={e => setColumnMapping({...columnMapping, Email: e.target.value})} style={inputStyle}>
+                                <option value="">-Select-</option>
+                                {bulkHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Department Column</label>
+                            <select value={columnMapping.Department} onChange={e => setColumnMapping({...columnMapping, Department: e.target.value})} style={inputStyle}>
+                                <option value="">-Select-</option>
+                                {bulkHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <Button variant="primary" onClick={handleBulkSubmit}>Upload {bulkData.length} Employees</Button>
+                    
+                    {bulkErrors.length > 0 && (
+                        <div style={{ marginTop: designSystem.spacing.md, border: `1px solid ${designSystem.colors.warning}`, borderRadius: designSystem.radius, padding: designSystem.spacing.md }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.sm }}>
+                                <h4 style={{ margin: 0, color: designSystem.colors.warning }}>
+                                    ⚠️ {bulkErrors.length} Row(s) Skipped - Missing Data
+                                </h4>
+                                <Button variant="secondary" size="small" onClick={() => setShowErrorLog(!showErrorLog)}>
+                                    {showErrorLog ? "Hide" : "View"} Error Log
+                                </Button>
+                            </div>
+                            
+                            {showErrorLog && (
+                                <div style={{ overflowX: "auto", marginTop: designSystem.spacing.sm }}>
+                                    <table style={{ ...globalStyles.table, width: "100%" }}>
+                                        <thead>
+                                            <tr style={{ ...globalStyles.tableHeader }}>
+                                                <th style={globalStyles.tableheadercell}>Row</th>
+                                                <th style={globalStyles.tableheadercell}>Name</th>
+                                                <th style={globalStyles.tableheadercell}>Email</th>
+                                                <th style={globalStyles.tableheadercell}>Department</th>
+                                                <th style={globalStyles.tableheadercell}>Reason</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {bulkErrors.map((err, idx) => (
+                                                <tr key={idx} style={{ ...globalStyles.tableRowEven }}>
+                                                    <td style={{ ...globalStyles.tableCell }}>{err.row}</td>
+                                                    <td style={{ ...globalStyles.tableCell }}>{err.name}</td>
+                                                    <td style={{ ...globalStyles.tableCell }}>{err.email}</td>
+                                                    <td style={{ ...globalStyles.tableCell }}>{err.department || "—"}</td>
+                                                    <td style={{ ...globalStyles.tableCell, color: designSystem.colors.error }}>{err.reason}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    <p style={{ ...designSystem.typography.caption, color: designSystem.colors.textSecondary, marginTop: designSystem.spacing.sm }}>
+                                        These rows were not uploaded due to missing Name or Email. Please fix the data in your file and re-upload.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+      )}
 
       {showForm && (
         <div style={{ ...globalStyles.card, marginBottom: designSystem.spacing.md }}>
@@ -256,10 +465,13 @@ export default function EmployeeList() {
       >
         <label style={labelStyle}>Select Role</label>
         <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} style={inputStyle}>
-          <option value="">Select Role</option>
-          <option value="Admin">Admin</option>
-          <option value="Manager">Manager</option>
-          <option value="Employee">Employee</option>
+          <option value="">-- Select Role --</option>
+              {roles.map((rol) => (
+                <option key={rol.id} value={rol.name}>
+                  {rol.name}
+                  {rol.description && ` (${rol.description})`}
+                </option>
+              ))}
         </select>
       </Modal>
 

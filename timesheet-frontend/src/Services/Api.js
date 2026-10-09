@@ -15,12 +15,30 @@ API.interceptors.request.use((config) => {
 
 // Auth
 export const login = (data) => API.post("/auth/login", data);
+export const getMyPermissions = () => API.get("/permissions/my-permissions");
+export const getAllPermissions = () => API.get("/permissions/all-permissions");
+export const getPermissionSets = () => API.get("/permissions/permission-sets");
+export const createPermissionSet = (data) => API.post("/permissions/permission-sets", data);
+export const updatePermissionSet = (id, data) => API.put(`/permissions/permission-sets/${id}`, data);
+export const deletePermissionSet = (id) => API.delete(`/permissions/permission-sets/${id}`);
+export const getRoles = () => API.get("/permissions/roles");
+export const assignPermissionSetToRole = (roleId, permissionSetId) => API.post(`/permissions/roles/${roleId}/permission-set/${permissionSetId}`);
+
+// Profiles
+export const getProfiles = () => API.get("/profile/profiles");
+export const createProfile = (data) => API.post("/profile/profiles", data);
+export const updateProfile = (id, data) => API.put(`/profile/profiles/${id}`, data);
+export const deleteProfile = (id) => API.delete(`/profile/profiles/${id}`);
+export const getUsers = () => API.get("/profile/users");
+export const assignProfileToUser = (userId, profileId) => API.put(`/profile/users/${userId}/profile`, { profileId });
+export const getUserProfile = (userId) => API.get(`/profile/users/${userId}/profile`);
 // export const register = (data) => API.post("/auth/register", data);
 export const forgotPassword = (data) => API.post("/auth/forgot-password", data);
 export const resetPassword = (data) => API.post("/auth/reset-password", data);
 
 // Timesheets
 export const submitTimesheet = (data) => API.post("/timesheets", data);
+export const submitBatchTimesheet = (data) => API.post("/timesheets/batch", data);
 export const getTimesheetsByEmployee = (employeeId) => API.get(`/timesheets/employee/${employeeId}`);
 export const getAllTimesheets = () => API.get("/timesheets");
 export const approveTimesheet = (id, status) => API.put(`/timesheets/approve/${id}`, { approvalStatus: status });
@@ -43,6 +61,7 @@ export const resetEmployeePassword = (id, newPassword) => API.post(`/employees/$
 export const addProject = (data) => API.post("/projects", data);
 export const getProjects = () => API.get("/projects");
 export const getProjectById = (id) => API.get(`/projects/${id}`);
+export const updateProject = (id, data) => API.put(`/projects/${id}`, data);
 export const deleteProject = (id) => API.delete(`/projects/${id}`);
 
 // Allocations
@@ -58,6 +77,11 @@ export const getBenchHours = () => API.get("/benchhours");
 // Clients
 export const addClient = (data) => API.post("/clients", data);
 export const getClients = () => API.get("/clients");
+
+// Business Units
+export const getBusinessUnits = () => API.get("/businessunits");
+export const addBusinessUnit = (data) => API.post("/businessunits", data);
+export const deleteBusinessUnit = (id) => API.delete(`/businessunits/${id}`);
 
 // LeaveRecords
 export const addLeaveRecord = (data) => API.post("/leaverecords", data);

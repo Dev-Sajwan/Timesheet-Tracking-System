@@ -70,7 +70,7 @@ namespace WebAPI.Controllers
 
         // POST: api/holidays (Admin, Manager only)
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize]
         public async Task<IActionResult> Add([FromBody] HolidayDto dto)
         {
             try
@@ -90,7 +90,7 @@ namespace WebAPI.Controllers
 
         // DELETE: api/holidays/{id} (Admin, Manager only)
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize]
         public async Task<IActionResult> Delete(int id)
         {
             try

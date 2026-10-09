@@ -4,6 +4,7 @@ using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(TimesheetDbContext))]
-    partial class TimesheetDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008081943_AddPermissionsSystem")]
+    partial class AddPermissionsSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -33,9 +36,6 @@ namespace Infrastructure.Migrations
                     b.Property<int>("AllocationPercent")
                         .HasColumnType("int");
 
-                    b.Property<int?>("BusinessUnitId")
-                        .HasColumnType("int");
-
                     b.Property<string>("EmployeeId")
                         .HasColumnType("nvarchar(450)");
 
@@ -49,8 +49,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("AllocationId");
-
-                    b.HasIndex("BusinessUnitId");
 
                     b.HasIndex("EmployeeId");
 
@@ -106,9 +104,6 @@ namespace Infrastructure.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("ProfileId")
-                        .HasColumnType("int");
-
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -128,8 +123,6 @@ namespace Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
-
-                    b.HasIndex("ProfileId");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -190,27 +183,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("BenchHours");
                 });
 
-            modelBuilder.Entity("Domain.Entities.BusinessUnit", b =>
-                {
-                    b.Property<int>("BusinessUnitId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BusinessUnitId"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("BusinessUnitId");
-
-                    b.ToTable("BusinessUnits");
-                });
-
             modelBuilder.Entity("Domain.Entities.Client", b =>
                 {
                     b.Property<int>("ClientId")
@@ -249,9 +221,6 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("ProfileId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -260,8 +229,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ProfileId");
 
                     b.HasIndex("UserId")
                         .IsUnique()
@@ -347,10 +314,6 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -360,30 +323,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("PermissionSets");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Profile", b =>
-                {
-                    b.Property<int>("ProfileId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProfileId"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsSystemAdmin")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ProfileId");
-
-                    b.ToTable("Profiles");
-                });
-
             modelBuilder.Entity("Domain.Entities.Project", b =>
                 {
                     b.Property<int>("ProjectId")
@@ -391,9 +330,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProjectId"));
-
-                    b.Property<int?>("BusinessUnitId")
-                        .HasColumnType("int");
 
                     b.Property<int>("ClientId")
                         .HasColumnType("int");
@@ -409,8 +345,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("ProjectId");
-
-                    b.HasIndex("BusinessUnitId");
 
                     b.HasIndex("ClientId", "ProjectName")
                         .IsUnique();
@@ -664,11 +598,6 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Allocation", b =>
                 {
-                    b.HasOne("Domain.Entities.BusinessUnit", "BusinessUnit")
-                        .WithMany()
-                        .HasForeignKey("BusinessUnitId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Domain.Entities.Employee", "Employee")
                         .WithMany("Allocations")
                         .HasForeignKey("EmployeeId");
@@ -679,21 +608,9 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("BusinessUnit");
-
                     b.Navigation("Employee");
 
                     b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("Domain.Entities.ApplicationUser", b =>
-                {
-                    b.HasOne("Domain.Entities.Profile", "Profile")
-                        .WithMany("Users")
-                        .HasForeignKey("ProfileId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Profile");
                 });
 
             modelBuilder.Entity("Domain.Entities.Approval", b =>
@@ -718,15 +635,9 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Employee", b =>
                 {
-                    b.HasOne("Domain.Entities.Profile", "Profile")
-                        .WithMany()
-                        .HasForeignKey("ProfileId");
-
                     b.HasOne("Domain.Entities.ApplicationUser", "User")
                         .WithOne()
                         .HasForeignKey("Domain.Entities.Employee", "UserId");
-
-                    b.Navigation("Profile");
 
                     b.Navigation("User");
                 });
@@ -742,18 +653,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Project", b =>
                 {
-                    b.HasOne("Domain.Entities.BusinessUnit", "BusinessUnit")
-                        .WithMany("Projects")
-                        .HasForeignKey("BusinessUnitId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Domain.Entities.Client", "Client")
                         .WithMany("Projects")
                         .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("BusinessUnit");
 
                     b.Navigation("Client");
                 });
@@ -865,11 +769,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("Domain.Entities.BusinessUnit", b =>
-                {
-                    b.Navigation("Projects");
-                });
-
             modelBuilder.Entity("Domain.Entities.Client", b =>
                 {
                     b.Navigation("Projects");
@@ -884,11 +783,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("LeaveRecords");
 
                     b.Navigation("Timesheets");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Profile", b =>
-                {
-                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("Domain.Entities.Project", b =>

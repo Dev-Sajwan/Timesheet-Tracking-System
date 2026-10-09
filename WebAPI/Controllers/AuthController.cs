@@ -4,6 +4,7 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Logging;
 using System.IdentityModel.Tokens.Jwt;
@@ -20,6 +21,7 @@ namespace WebAPI.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IEmployeeRepository _employeeRepository;
+        private readonly ITimesheetDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthController> _logger;
 
@@ -28,6 +30,7 @@ namespace WebAPI.Controllers
             SignInManager<ApplicationUser> signInManager,
             RoleManager<IdentityRole> roleManager,
             IEmployeeRepository employeeRepository,
+            ITimesheetDbContext context,
             IConfiguration configuration,
             ILogger<AuthController> logger)
         {
@@ -35,6 +38,7 @@ namespace WebAPI.Controllers
             _signInManager = signInManager;
             _roleManager = roleManager;
             _employeeRepository = employeeRepository;
+            _context = context;
             _configuration = configuration;
             _logger = logger;
         }
@@ -132,11 +136,18 @@ namespace WebAPI.Controllers
             try
             {
                 _logger.LogInformation("Login attempt for user: {UserName}", request.UserName);
+                
+                // Try to find user by username first, then by email
                 var user = await _userManager.FindByNameAsync(request.UserName);
                 if (user == null)
                 {
-                    _logger.LogWarning("Login failed - user not found: {UserName}", request.UserName);
-                    return Unauthorized(new { Message = "Invalid credentials" });
+                    // If not found by username, try by email
+                    user = await _userManager.FindByEmailAsync(request.UserName);
+                    if (user == null)
+                    {
+                        _logger.LogWarning("Login failed - user not found: {UserName}", request.UserName);
+                        return Unauthorized(new { Message = "Invalid credentials" });
+                    }
                 }
 
                 var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
@@ -159,6 +170,17 @@ namespace WebAPI.Controllers
                 {
                     authClaims.Add(new Claim("employeeId", employee.Id));
                     authClaims.Add(new Claim("fullName", employee.Name));
+                    
+                    // Add Profile information
+                    if (employee.ProfileId.HasValue)
+                    {
+                        var profile = await _context.Profiles.FindAsync(employee.ProfileId.Value);
+                        if (profile != null)
+                        {
+                            authClaims.Add(new Claim("profileId", profile.ProfileId.ToString()));
+                            authClaims.Add(new Claim("isSystemAdmin", profile.IsSystemAdmin.ToString().ToLower()));
+                        }
+                    }
                 }
 
                 foreach (var role in roles)
@@ -193,7 +215,7 @@ namespace WebAPI.Controllers
         }
 
         // Assign role (Admin only)
-        [Authorize(Roles = "Admin")]
+// removed authorize roles
         [HttpPost("assign-role")]
         public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequestDto request)
         {
@@ -208,12 +230,12 @@ namespace WebAPI.Controllers
                     return NotFound(new { Message = "User not found." });
                 }
 
-                var allowedRoles = new[] { "Admin", "Manager", "Employee" };
+                var allowedRoles = new[] { "L1", "L2", "L3", "L4" };
 
                 if (!allowedRoles.Contains(request.Role, StringComparer.OrdinalIgnoreCase))
                 {
                     _logger.LogWarning("Invalid role requested: {Role}", request.Role);
-                    return BadRequest(new { Message = "Invalid role." });
+                    return BadRequest(new { Message = "Invalid role. Allowed Only L1, L2, L3, L4" });
                 }
 
                 // Find the existing role

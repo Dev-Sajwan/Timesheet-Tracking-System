@@ -8,6 +8,7 @@ namespace Application.Interfaces
         Task<Employee?> GetByIdAsync(string id);
         Task<Employee?> GetByEmailAsync(string email);
         Task<IEnumerable<Employee>> GetAllAsync();
+        Task<IEnumerable<Employee>> GetAllAsync(string currentUserRole);
         Task AddAsync(Employee employee);
         Task UpdateAsync(Employee employee);
         Task DeleteAsync(string id);

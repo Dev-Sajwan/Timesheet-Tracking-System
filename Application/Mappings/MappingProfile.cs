@@ -4,7 +4,7 @@ using AutoMapper;
 
 namespace Application.Mappings
 {
-    public class MappingProfile : Profile
+    public class MappingProfile : AutoMapper.Profile
     {
         public MappingProfile()
         {

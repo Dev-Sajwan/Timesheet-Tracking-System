@@ -12,6 +12,10 @@
         public string? UserId { get; set; }
         public ApplicationUser? User { get; set; }
 
+        // Profile link
+        public int? ProfileId { get; set; }
+        public Profile? Profile { get; set; }
+
         // Domain relationships
         public ICollection<Allocation> Allocations { get; set; } = new List<Allocation>();
         public ICollection<Timesheet> Timesheets { get; set; } = new List<Timesheet>();

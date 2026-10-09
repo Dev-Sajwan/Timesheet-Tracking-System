@@ -68,13 +68,19 @@ namespace WebAPI.Controllers
             }
         }
 
-        [HttpGet]
+[HttpGet]
         public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetAll()
         {
             try
             {
                 _logger.LogInformation("Getting all employees");
-                var employees = await _employeeService.GetAllAsync();
+                
+                // Get current user's role from token
+                var currentUserRole = User.FindFirst("role")?.Value 
+                    ?? User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value
+                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                
+                var employees = await _employeeService.GetAllAsync(currentUserRole);
                 var dtos = _mapper.Map<IEnumerable<EmployeeDto>>(employees);
                 
                 // Fetch roles for each employee from Identity
@@ -99,6 +105,47 @@ namespace WebAPI.Controllers
             }
         }
 
+        [HttpPost("bulk")]
+        public async Task<IActionResult> CreateBulk([FromBody] List<EmployeeDto> employeeDtos)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var createdEmployees = new List<EmployeeDto>();
+
+            foreach(var employeeDto in employeeDtos)
+            {
+                var user = new ApplicationUser
+                {
+                    UserName = employeeDto.Email.Split('@')[0] + Guid.NewGuid().ToString().Substring(0,4),
+                    Email = employeeDto.Email,
+                    FullName = employeeDto.Name,
+                    EmailConfirmed = true
+                };
+
+                var result = await _userManager.CreateAsync(user, "TempPass123!");
+                if (!result.Succeeded)
+                {
+                    continue; // skip failed
+                }
+
+                var empEntity = new Employee
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = employeeDto.Name,
+                    Email = employeeDto.Email,
+                    Department = employeeDto.Department ?? "",
+                    Status = "Active",
+                    UserId = user.Id
+                };
+
+                await _employeeService.AddAsync(empEntity);
+                employeeDto.Id = empEntity.Id;
+                createdEmployees.Add(employeeDto);
+            }
+
+            return Ok(createdEmployees);
+        }
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] EmployeeDto dto)
         {
@@ -225,7 +272,7 @@ namespace WebAPI.Controllers
 
         // ---------------- Role Management endpoints (Admin only) ----------------
 
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         [HttpGet("{id}/roles")]
         public async Task<ActionResult<List<string>>> GetRoles(string id)
         {
@@ -248,7 +295,7 @@ namespace WebAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         [HttpPut("{id}/roles")]
         public async Task<IActionResult> AssignRole(string id, [FromBody] AssignRoleRequestDto request)
         {
@@ -261,11 +308,11 @@ namespace WebAPI.Controllers
                 var user = await _userManager.FindByIdAsync(employee.UserId ?? "");
                 if (user == null) return NotFound(new { Message = "Identity user not found" });
 
-                var allowedRoles = new[] { "Admin", "Manager", "Employee" };
+                var allowedRoles = new[] { "L1", "L2", "L3", "L4" };
                 var role = request.Role;
 
                 if (!allowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
-                    return BadRequest(new { Message = "Invalid role. Allowed: Admin, Manager, Employee" });
+                    return BadRequest(new { Message = "Invalid role. Allowed:  L1, L2, L3, L4" });
 
                 // Find the correct case
                 role = allowedRoles.First(r => r.Equals(role, StringComparison.OrdinalIgnoreCase));
@@ -296,7 +343,7 @@ namespace WebAPI.Controllers
         }
 
         // Admin: Reset employee password
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         [HttpPost("{id}/reset-password")]
         public async Task<IActionResult> ResetPassword(string id, [FromBody] ResetPasswordDto dto)
         {

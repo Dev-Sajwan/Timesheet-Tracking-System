@@ -6,6 +6,13 @@ import { designSystem, globalStyles } from "../styles/designSystem";
 import Modal from "./Modal";
 import Button from "./Button";
 
+const formatDate = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d)) return value;
+  return d.toLocaleDateString("en-CA");
+};
+
 const getWeekRange = (date) => {
   const d = new Date(date);
   const day = d.getDay();
@@ -259,7 +266,7 @@ const EmployeeDashboard = () => {
                   const isWeekendDay = isWeekend(holidayDate);
                   return (
                     <tr key={h.holidayId} style={{ ...globalStyles.tableRowEven }}>
-                      <td style={{ ...globalStyles.tableCell }}>{holidayDate.toLocaleDateString()}</td>
+                      <td style={{ ...globalStyles.tableCell }}>{formatDate(h.date)}</td>
                       <td style={{ ...globalStyles.tableCell }}>{h.description}</td>
                       <td style={{ ...globalStyles.tableCell }}>{isWeekendDay ? "Weekend (no impact)" : "Reduces week by 8 hrs"}</td>
                     </tr>
@@ -291,7 +298,7 @@ const EmployeeDashboard = () => {
                 <tr key={a.allocationId || a.id} style={{ ...globalStyles.tableRowEven }}>
                   <td style={{ ...globalStyles.tableCell }}>{projects.find(p => p.projectId === a.projectId)?.projectName || a.projectId}</td>
                   <td style={{ ...globalStyles.tableCell }}>{a.allocationPercent || a.allocationPercentage}%</td>
-                  <td style={{ ...globalStyles.tableCell }}>{a.startDate ? new Date(a.startDate).toLocaleDateString() : "N/A"}</td>
+                  <td style={{ ...globalStyles.tableCell }}>{a.startDate ? formatDate(a.startDate) : "N/A"}</td>
                 </tr>
               ))}
 </tbody>
@@ -326,7 +333,7 @@ const EmployeeDashboard = () => {
               <tbody>
                 {paginatedTimesheets.map(t => (
                   <tr key={t.id} style={{ ...globalStyles.tableRowEven }}>
-                    <td style={{ ...globalStyles.tableCell }}>{new Date(t.date).toLocaleDateString()}</td>
+                    <td style={{ ...globalStyles.tableCell }}>{formatDate(t.date)}</td>
                     <td style={{ ...globalStyles.tableCell }}>{projects.find(p => p.projectId === t.projectId)?.projectName || t.projectId}</td>
                     <td style={{ ...globalStyles.tableCell }}>
                       {t.hoursWorked}

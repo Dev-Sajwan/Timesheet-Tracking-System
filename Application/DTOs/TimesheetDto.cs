@@ -26,5 +26,18 @@
         public string Description { get; set; }
     }
 
+    public class BatchTimesheetDto
+    {
+        public string EmployeeId { get; set; }
+        public int ProjectId { get; set; }
+        public DateTime WeekStartDate { get; set; }
+        public List<DailyEntryDto> DailyEntries { get; set; } = new();
+    }
 
+    public class DailyEntryDto
+    {
+        public DateTime Date { get; set; }
+        public int Hours { get; set; }
+        public string Description { get; set; }
+    }
 }

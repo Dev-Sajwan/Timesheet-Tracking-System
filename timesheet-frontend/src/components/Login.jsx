@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { login } from "../Services/Api";
+import { login, getMyPermissions } from "../Services/Api";
 import { jwtDecode } from "jwt-decode";
 import { designSystem, globalStyles } from "../styles/designSystem";
 
@@ -10,38 +10,69 @@ const Login = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await login({ userName, password });
-      const { token } = response.data;
-      localStorage.setItem("token", token);
-      
-      const decoded = jwtDecode(token);
-      
-      if (decoded.employeeId) {
-         localStorage.setItem("employeeId", decoded.employeeId);
-      }
-      if (decoded.fullName) {
-         localStorage.setItem("fullName", decoded.fullName);
-      }
+    const handleLogin = async (e) => {
+      e.preventDefault();
+      try {
+        const response = await login({ userName, password });
+        
+        // Log full response for debugging
+        console.log("Login API response:", response);
+        console.log("Response status:", response.status);
+        console.log("Response data:", response.data);
+        
+        // Check if we got a valid response
+        if (!response || !response.data) {
+          throw new Error("Invalid response from server");
+        }
+        
+        // ASP.NET Core serializes as camelCase by default, so the property is 'token' not 'Token'
+        const token = response.data.token || response.data.Token;
+        if (!token || typeof token !== 'string') {
+          console.error("Token not found or invalid type. Response data keys:", Object.keys(response.data));
+          throw new Error("No valid token received from server");
+        }
+        
+        // Log token info for debugging (without exposing the token itself)
+        console.log("Login successful, token received:", `length: ${token.length}`);
+        
+        localStorage.setItem("token", token);
+        
+        let decoded;
+        try {
+          decoded = jwtDecode(token);
+          console.log("Token decoded successfully");
+        } catch (decodeError) {
+          console.error("Token decoding failed:", decodeError);
+          throw new Error("Invalid token received");
+        }
+        
+        if (decoded.employeeId) {
+           localStorage.setItem("employeeId", decoded.employeeId);
+        }
+        if (decoded.fullName) {
+           localStorage.setItem("fullName", decoded.fullName);
+        }
 
-      const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
-      const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
+        const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
+        const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
+        console.log("User roles:", userRoles);
 
-      if (rolesArray.includes("Admin")) {
-        navigate("/admin");
-      } else if (rolesArray.includes("Manager")) {
-        navigate("/manager");
-      } else if (rolesArray.includes("Employee")) {
-        navigate("/employee");
-      } else {
-        setError("You do not have an assigned role.");
+        // Fetch dynamic permissions
+        try {
+          const permsRes = await getMyPermissions();
+          localStorage.setItem("permissions", JSON.stringify(permsRes.data));
+          console.log("Permissions loaded successfully");
+        } catch (e) {
+          console.error("Failed to load permissions", e);
+          localStorage.setItem("permissions", JSON.stringify([]));
+        }
+
+        navigate("/dashboard");
+      } catch (err) {
+        console.error("Login error:", err);
+        setError("Invalid username or password.");
       }
-    } catch (err) {
-      setError("Invalid username or password.");
-    }
-  };
+    };
 
   const inputStyle = {
     ...globalStyles.input,

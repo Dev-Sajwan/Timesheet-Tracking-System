@@ -64,7 +64,7 @@ namespace WebAPI.Controllers
 
         // POST: api/approvals/{timesheetId}/approve
         [HttpPost("{timesheetId}/approve")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize]
         public async Task<IActionResult> Approve(int timesheetId, [FromQuery] string approverName, [FromQuery] string approvalType = "Manual")
         {
             try
@@ -83,7 +83,7 @@ namespace WebAPI.Controllers
 
         // POST: api/approvals/{timesheetId}/reject
         [HttpPost("{timesheetId}/reject")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize]
         public async Task<IActionResult> Reject(int timesheetId, [FromQuery] string approverName, [FromQuery] string approvalType = "Manual")
         {
             try

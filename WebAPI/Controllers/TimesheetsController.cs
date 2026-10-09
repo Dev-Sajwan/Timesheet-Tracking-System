@@ -140,9 +140,9 @@ namespace WebAPI.Controllers
             }
         }
 
-        // PUT: api/timesheets/approve/{id}
+// PUT: api/timesheets/approve/{id}
         [HttpPut("approve/{id}")]
-        [Authorize(Roles = "Manager,Admin")]
+        [Authorize]
         public async Task<IActionResult> Approve(int id, [FromBody] ApproveTimesheetDto dto)
         {
             try
@@ -173,6 +173,55 @@ namespace WebAPI.Controllers
             {
                 _logger.LogError(ex, "Error approving/rejecting timesheet: {TimesheetId}", id);
                 return StatusCode(500, new { Message = "An error occurred while processing the approval" });
+            }
+        }
+
+        // POST: api/timesheets/batch
+        [HttpPost("batch")]
+        public async Task<IActionResult> CreateBatch([FromBody] BatchTimesheetDto dto)
+        {
+            try
+            {
+                _logger.LogInformation("Creating batch timesheet for employee: {EmployeeId}, week: {WeekStart}", dto.EmployeeId, dto.WeekStartDate);
+
+                var createdTimesheets = new List<Timesheet>();
+
+                foreach (var entry in dto.DailyEntries)
+                {
+                    if (entry.Hours <= 0) continue; // skip empty days
+
+                    var timesheet = new Timesheet
+                    {
+                        EmployeeId = dto.EmployeeId,
+                        ProjectId = dto.ProjectId,
+                        Date = entry.Date,
+                        HoursWorked = entry.Hours,
+                        SubmissionType = "Weekly",
+                        ApprovalStatus = "Pending",
+                        WeekStartDate = dto.WeekStartDate,
+                        WeekEndDate = dto.WeekStartDate.AddDays(6),
+                        Entries = new List<TimesheetEntry>
+                        {
+                            new TimesheetEntry
+                            {
+                                Date = entry.Date,
+                                Hours = entry.Hours,
+                                Description = entry.Description
+                            }
+                        }
+                    };
+
+                    await _timesheetService.AddAsync(timesheet);
+                    createdTimesheets.Add(timesheet);
+                }
+
+                _logger.LogInformation("Batch timesheet created successfully: {Count} entries", createdTimesheets.Count);
+                return Ok(new { Message = $"Timesheet submitted successfully with {createdTimesheets.Count} days", Timesheets = _mapper.Map<List<TimesheetDto>>(createdTimesheets) });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating batch timesheet for employee: {EmployeeId}", dto.EmployeeId);
+                return StatusCode(500, new { Message = "An error occurred while creating the batch timesheet" });
             }
         }
 

@@ -96,7 +96,7 @@ namespace WebAPI.Controllers
                 _logger.LogInformation("Deleting client: {ClientId}", id);
                 await _clientService.DeleteAsync(id);
                 _logger.LogInformation("Client deleted successfully: {ClientId}", id);
-                return NoContent();
+                return Ok("Client deleted Successfully");
             }
             catch (Exception ex)
             {

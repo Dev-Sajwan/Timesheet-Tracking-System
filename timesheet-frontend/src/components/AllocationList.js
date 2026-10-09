@@ -1,23 +1,34 @@
-import React, { useEffect, useState } from "react";
-import {
-  getAllocations,
-  addAllocation,
-  deleteAllocation,
-  getEmployees,
-  getProjects,
-  getClients
-} from "../Services/Api";
-import { designSystem, globalStyles } from "../styles/designSystem";
-import Button from "./Button";
+import React, { useEffect, useState, useMemo } from "react";
+  import {
+    getAllocations,
+    addAllocation,
+    deleteAllocation,
+    getEmployees,
+    getProjects,
+    getClients,
+    getBusinessUnits,
+    addBusinessUnit
+  } from "../Services/Api";
+  import { designSystem, globalStyles } from "../styles/designSystem";
+  import Button from "./Button";
+
+const formatDate = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d)) return value;
+  return d.toLocaleDateString("en-CA");
+};
 
 export default function AllocationList() {
   const [allocations, setAllocations] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
+  const [businessUnits, setBusinessUnits] = useState([]);
 
   // Allocation form
   const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
   const [allocationPercent, setAllocationPercent] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -25,15 +36,24 @@ export default function AllocationList() {
 
   // Modal
   const [showAllocationModal, setShowAllocationModal] = useState(false);
+  const [newBUName, setNewBUName] = useState("");
+  const [showAddBU, setShowAddBU] = useState(false);
 
   // Search
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Filtered projects based on selected Business Unit
+  const filteredProjects = useMemo(() => {
+    if (!selectedBusinessUnit) return projects;
+    return projects.filter(p => p.businessUnitId === Number(selectedBusinessUnit));
+  }, [projects, selectedBusinessUnit]);
 
   useEffect(() => {
     loadAllocations();
     loadEmployees();
     loadProjects();
     loadClients();
+    loadBusinessUnits();
   }, []);
 
   const loadClients = async () => {
@@ -42,6 +62,15 @@ export default function AllocationList() {
       setClients(res.data);
     } catch (error) {
       console.error("Error loading clients:", error);
+    }
+  };
+
+  const loadBusinessUnits = async () => {
+    try {
+      const res = await getBusinessUnits();
+      setBusinessUnits(res.data);
+    } catch (error) {
+      console.error("Error loading business units:", error);
     }
   };
 
@@ -77,6 +106,7 @@ export default function AllocationList() {
 
   const handleAdd = async () => {
     if (
+      !selectedBusinessUnit ||
       !selectedProject ||
       selectedEmployees.length === 0 ||
       !allocationPercent ||
@@ -89,6 +119,7 @@ export default function AllocationList() {
       for (const empId of selectedEmployees) {
         const allocationData = {
           employeeId: empId,
+          businessUnitId: Number(selectedBusinessUnit),
           projectId: Number(selectedProject),
           allocationPercent: Number(allocationPercent),
           startDate: new Date(startDate).toISOString(),
@@ -117,10 +148,23 @@ export default function AllocationList() {
 
   const resetAllocationForm = () => {
     setSelectedEmployees([]);
+    setSelectedBusinessUnit("");
     setSelectedProject("");
     setAllocationPercent("");
     setStartDate("");
     setEndDate("");
+  };
+
+  const handleAddBusinessUnit = async () => {
+    if (!newBUName.trim()) return;
+    try {
+      await addBusinessUnit({ name: newBUName });
+      setNewBUName("");
+      setShowAddBU(false);
+      await loadBusinessUnits();
+    } catch (error) {
+      console.error("Error adding business unit:", error);
+    }
   };
 
   const handleCloseModal = () => {
@@ -352,6 +396,10 @@ export default function AllocationList() {
                 </th>
 
                 <th style={globalStyles.tableheadercell}>
+                  Business Unit
+                </th>
+
+                <th style={globalStyles.tableheadercell}>
                   Project
                 </th>
 
@@ -395,6 +443,10 @@ export default function AllocationList() {
                     </td>
 
                     <td style={{ ...globalStyles.tableCell }}>
+                      {businessUnits.find(bu => bu.businessUnitId === alloc.businessUnitId)?.name || "—"}
+                    </td>
+
+                    <td style={{ ...globalStyles.tableCell }}>
                       {proj
                         ? proj.projectName
                         : `Project ${alloc.projectId}`}
@@ -411,19 +463,11 @@ export default function AllocationList() {
                     </td>
 
                     <td style={{ ...globalStyles.tableCell }}>
-                      {alloc.startDate
-                        ? new Date(
-                            alloc.startDate
-                          ).toLocaleDateString()
-                        : ""}
+                      {formatDate(alloc.startDate)}
                     </td>
 
                     <td style={{ ...globalStyles.tableCell }}>
-                      {alloc.endDate
-                        ? new Date(
-                            alloc.endDate
-                          ).toLocaleDateString()
-                        : ""}
+                      {formatDate(alloc.endDate)}
                     </td>
 
                     <td style={{ ...globalStyles.tableCell }}>
@@ -554,6 +598,62 @@ export default function AllocationList() {
                 gap: designSystem.spacing.md
               }}
             >
+              {/* Business Unit */}
+<div>
+                <label style={labelStyle}>
+                  Business Unit
+                </label>
+
+                <select
+                  value={selectedBusinessUnit}
+                  onChange={(e) => {
+                    if (e.target.value === "add") {
+                      setShowAddBU(true);
+                      setSelectedBusinessUnit("");
+                    } else {
+                      setSelectedBusinessUnit(e.target.value);
+                      setSelectedProject("");
+                    }
+                  }}
+                  style={selectStyle}
+                >
+                  <option value="">
+                    Select Business Unit
+                  </option>
+
+                  {businessUnits.map((bu) => (
+                    <option
+                      key={bu.businessUnitId}
+                      value={bu.businessUnitId}
+                    >
+                      {bu.name}
+                    </option>
+                  ))}
+                  <option value="add" style={{ color: designSystem.colors.primary, fontWeight: 600 }}>
+                    ➕ Add New Business Unit
+                  </option>
+                </select>
+
+                {showAddBU && (
+                  <div style={{ marginTop: designSystem.spacing.sm, border: `1px solid ${designSystem.colors.primary}`, borderRadius: designSystem.radius, padding: designSystem.spacing.sm }}>
+                    <div style={{ display: "flex", gap: designSystem.spacing.sm, flexWrap: "wrap", alignItems: "flex-end" }}>
+                      <div style={{ flex: 1, minWidth: "200px" }}>
+                        <label style={{ display: "block", marginBottom: designSystem.spacing.xs, ...designSystem.typography.bodyMedium }}>Business Unit Name</label>
+                        <input
+                          type="text"
+                          placeholder="Enter Business Unit Name"
+                          value={newBUName}
+                          onChange={(e) => setNewBUName(e.target.value)}
+                          style={inputStyle}
+                        />
+                      </div>
+                      <Button variant="primary" onClick={handleAddBusinessUnit}>Save BU</Button>
+                      <Button variant="secondary" onClick={() => { setShowAddBU(false); setNewBUName(""); }}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Project */}
               <div>
                 <label style={labelStyle}>
@@ -571,7 +671,7 @@ export default function AllocationList() {
                     Select Project
                   </option>
 
-                  {projects.map((proj) => (
+                  {filteredProjects.map((proj) => (
                     <option
                       key={proj.projectId}
                       value={proj.projectId}
@@ -587,6 +687,12 @@ export default function AllocationList() {
                     </option>
                   ))}
                 </select>
+
+                {!selectedBusinessUnit && (
+                  <div style={{ fontSize: "12px", color: designSystem.colors.textSecondary, marginTop: 4 }}>
+                    Select a Business Unit first to filter projects
+                  </div>
+                )}
               </div>
 
               {/* Employees */}
@@ -707,6 +813,7 @@ export default function AllocationList() {
                 variant="primary"
                 onClick={handleAdd}
                 disabled={
+                  !selectedBusinessUnit ||
                   !selectedProject ||
                   selectedEmployees.length === 0 ||
                   !allocationPercent ||
