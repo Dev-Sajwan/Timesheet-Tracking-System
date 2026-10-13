@@ -5,6 +5,7 @@ namespace Application.Interfaces
     public interface ITimesheetService
     {
         Task<IEnumerable<Timesheet>> GetAllAsync();
+        Task<IEnumerable<Timesheet>> GetAllAsync(string currentUserRole);
         Task<Timesheet> GetByIdAsync(int id);
         Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(string employeeId, DateTime weekStart);
         Task<IEnumerable<Timesheet>> GetByEmployeeAsync(string employeeId);

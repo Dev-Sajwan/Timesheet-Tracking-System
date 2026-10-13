@@ -164,57 +164,9 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
   return (
     <div>
       <div style={{ padding: designSystem.spacing.lg, maxWidth: "900px", margin: "0 auto", fontFamily: "Roboto, Arial, sans-serif" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md }}>
-          <h2 style={{ margin: `0 0 ${designSystem.spacing.md} 0`, ...designSystem.typography.h2 }}>Weekly Timesheet</h2>
-          <Button variant="secondary" onClick={() => setShowTimesheetList(!showTimesheetList)}>
-            {showTimesheetList ? "Hide" : "Show"} Timesheet List
-          </Button>
-        </div>
+        
 
-        {showTimesheetList && existingTimesheets.length > 0 && (
-          <div style={{ ...globalStyles.card, marginBottom: designSystem.spacing.lg }}>
-            <h3 style={{ margin: `0 0 ${designSystem.spacing.md} 0`, ...designSystem.typography.h3 }}>Submitted Timesheets</h3>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ ...globalStyles.table, width: "100%" }}>
-                <thead>
-                  <tr style={{ ...globalStyles.tableHeader }}>
-                    <th style={globalStyles.tableheadercell}>Project</th>
-                    <th style={globalStyles.tableheadercell}>Week Start</th>
-                    <th style={globalStyles.tableheadercell}>Total Hours</th>
-                    <th style={globalStyles.tableheadercell}>Status</th>
-                    <th style={globalStyles.tableheadercell}>Submitted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {existingTimesheets.map((ts) => {
-                    const proj = projects.find(p => p.projectId === ts.projectId);
-                    return (
-                      <tr key={ts.id} style={{ ...globalStyles.tableRowEven }}>
-                        <td style={{ ...globalStyles.tableCell }}>{proj?.projectName || `Project ${ts.projectId}`}</td>
-                        <td style={{ ...globalStyles.tableCell }}>{ts.weekStartDate || "—"}</td>
-                        <td style={{ ...globalStyles.tableCell }}>{(ts.dailyEntries || []).reduce((sum, e) => sum + (e.hours || 0), 0).toFixed(1)} hrs</td>
-                        <td style={{ ...globalStyles.tableCell }}>
-                          <span style={{ 
-                            padding: "2px 8px", 
-                            borderRadius: "12px", 
-                            fontSize: "12px",
-                            background: ts.approvalStatus === "Approved" ? "#E8F5E9" : 
-                                       ts.approvalStatus === "Rejected" ? "#FFEBEE" : "#FFF3E0",
-                            color: ts.approvalStatus === "Approved" ? "#2E7D32" : 
-                                   ts.approvalStatus === "Rejected" ? "#C62828" : "#E65100"
-                          }}>
-                            {ts.approvalStatus || "Pending"}
-                          </span>
-                        </td>
-                        <td style={{ ...globalStyles.tableCell }}>{ts.submittedAt ? new Date(ts.submittedAt).toLocaleDateString() : "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        
 
         {showTimesheetList && existingTimesheets.length === 0 && (
           <div style={{ ...globalStyles.card, marginBottom: designSystem.spacing.lg, textAlign: "center", padding: designSystem.spacing.xl }}>
@@ -335,6 +287,60 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
             {loading ? "Submitting..." : "Submit Weekly Timesheet"}
           </Button>
         </div>
+
+        <div><hr style={{ backgroundColor: 'black', height: '5px', margin: '20px 0' }} /></div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.lg }}>
+          <h2 style={{ margin: `0 0 ${designSystem.spacing.md} 0`, ...designSystem.typography.h2 }}>Weekly Timesheet</h2>
+          <Button variant="secondary" onClick={() => setShowTimesheetList(!showTimesheetList)}>
+            {showTimesheetList ? "Hide" : "Show"} Timesheet List
+          </Button>
+        </div>
+
+        {showTimesheetList && existingTimesheets.length > 0 && (
+          <div style={{ ...globalStyles.card, marginBottom: designSystem.spacing.lg }}>
+            <h3 style={{ margin: `0 0 ${designSystem.spacing.md} 0`, ...designSystem.typography.h3 }}>Submitted Timesheets</h3>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ ...globalStyles.table, width: "100%" }}>
+                <thead>
+                  <tr style={{ ...globalStyles.tableHeader }}>
+                    <th style={globalStyles.tableheadercell}>Project</th>
+                    <th style={globalStyles.tableheadercell}>Week Start</th>
+                    <th style={globalStyles.tableheadercell}>Total Hours</th>
+                    <th style={globalStyles.tableheadercell}>Status</th>
+                    <th style={globalStyles.tableheadercell}>Submitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {existingTimesheets.map((ts) => {
+                    const proj = projects.find(p => p.projectId === ts.projectId);
+                    return (
+                      <tr key={ts.id} style={{ ...globalStyles.tableRowEven }}>
+                        <td style={{ ...globalStyles.tableCell }}>{proj?.projectName || `Project ${ts.projectId}`}</td>
+                        <td style={{ ...globalStyles.tableCell }}>{ts.weekStartDate ? new Date(ts.weekStartDate).toLocaleDateString("en-GB") : "—"}</td>
+                        <td style={{ ...globalStyles.tableCell }}>{(ts.dailyEntries || []).reduce((sum, e) => sum + (e.hours || 0), 0).toFixed(1)} hrs</td>
+                        <td style={{ ...globalStyles.tableCell }}>
+                          <span style={{ 
+                            padding: "2px 8px", 
+                            borderRadius: "12px", 
+                            fontSize: "12px",
+                            background: ts.approvalStatus === "Approved" ? "#E8F5E9" : 
+                                       ts.approvalStatus === "Rejected" ? "#FFEBEE" : "#FFF3E0",
+                            color: ts.approvalStatus === "Approved" ? "#2E7D32" : 
+                                   ts.approvalStatus === "Rejected" ? "#C62828" : "#E65100"
+                          }}>
+                            {ts.approvalStatus || "Pending"}
+                          </span>
+                        </td>
+                        <td style={{ ...globalStyles.tableCell }}>{ts.submittedAt ? new Date(ts.submittedAt).toLocaleDateString() : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
   );
 }

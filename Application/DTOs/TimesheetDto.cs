@@ -12,6 +12,10 @@
         public DateTime WeekStartDate { get; set; }
         public DateTime WeekEndDate { get; set; }
 
+        // Related data
+        public EmployeeDto? Employee { get; set; }
+        public ProjectDto? Project { get; set; }
+
         // Flattened collections
         public List<TimesheetEntryDto> Entries { get; set; } = new();
         public List<ApprovalDto> Approvals { get; set; } = new();

@@ -7,6 +7,7 @@
         public string ApprovedBy { get; set; } = "";
         public DateTime ApprovalDate { get; set; }
         public string ApprovalType { get; set; } = "Manual"; // or Auto
+        public string Description { get; set; } = String.Empty;
     }
 
 

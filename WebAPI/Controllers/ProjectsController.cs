@@ -64,7 +64,18 @@ namespace WebAPI.Controllers
             try
             {
                 _logger.LogInformation("Getting all projects");
-                var projects = await _projectService.GetAllAsync();
+                // Get current user's role from token
+                var currentUserRole = User.FindFirst("role")?.Value 
+                    ?? User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value
+                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                
+                // Check if user is System Admin (profile-based)
+                var isSystemAdmin = User.FindFirst("isSystemAdmin")?.Value?.ToLower() == "true";
+                
+                // If System Admin, bypass role filtering
+                string roleForFiltering = isSystemAdmin ? "" : currentUserRole;
+                
+                var projects = await _projectService.GetAllAsync(roleForFiltering);
                 return Ok(_mapper.Map<IEnumerable<ProjectDto>>(projects));
             }
             catch (Exception ex)

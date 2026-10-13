@@ -1,19 +1,68 @@
 ﻿using Application.Interfaces;
 using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace Application.Services
 {
     public class TimesheetService : ITimesheetService
     {
         private readonly ITimesheetRepository _timesheetRepository;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public TimesheetService(ITimesheetRepository timesheetRepository)
+        public TimesheetService(ITimesheetRepository timesheetRepository, UserManager<ApplicationUser> userManager)
         {
             _timesheetRepository = timesheetRepository;
+            _userManager = userManager;
         }
 
         public async Task<IEnumerable<Timesheet>> GetAllAsync() =>
             await _timesheetRepository.GetAllAsync();
+
+        public async Task<IEnumerable<Timesheet>> GetAllAsync(string currentUserRole)
+        {
+            // Admin bypass - if empty or null role, return all (admin case)
+            if (string.IsNullOrEmpty(currentUserRole))
+                return await _timesheetRepository.GetAllAsync();
+
+            var allTimesheets = await _timesheetRepository.GetAllAsync();
+            
+            // Role hierarchy: L1 > L2 > L3 > L4
+            var allowedRoles = GetAllowedRoles(currentUserRole);
+            
+            var filteredTimesheets = new List<Timesheet>();
+            foreach (var ts in allTimesheets)
+            {
+                var user = await _userManager.FindByIdAsync(ts.Employee?.UserId ?? "");
+                if (user != null)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    var userRole = roles.FirstOrDefault(r => r.StartsWith("L"));
+                    if (userRole != null && allowedRoles.Contains(userRole))
+                    {
+                        filteredTimesheets.Add(ts);
+                    }
+                }
+                else if (string.IsNullOrEmpty(currentUserRole))
+                {
+                    filteredTimesheets.Add(ts);
+                }
+            }
+            
+            return filteredTimesheets;
+        }
+
+        private List<string> GetAllowedRoles(string currentUserRole)
+        {
+            var roleHierarchy = new Dictionary<string, List<string>>
+            {
+                { "L1", new List<string> { "L1", "L2", "L3", "L4" } },
+                { "L2", new List<string> { "L2", "L3", "L4" } },
+                { "L3", new List<string> { "L3", "L4" } },
+                { "L4", new List<string> { "L4" } }
+            };
+
+            return roleHierarchy.TryGetValue(currentUserRole, out var roles) ? roles : new List<string>();
+        }
 
         public async Task<Timesheet> GetByIdAsync(int id)
         {

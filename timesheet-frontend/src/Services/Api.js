@@ -41,7 +41,6 @@ export const submitTimesheet = (data) => API.post("/timesheets", data);
 export const submitBatchTimesheet = (data) => API.post("/timesheets/batch", data);
 export const getTimesheetsByEmployee = (employeeId) => API.get(`/timesheets/employee/${employeeId}`);
 export const getAllTimesheets = () => API.get("/timesheets");
-export const approveTimesheet = (id, status) => API.put(`/timesheets/approve/${id}`, { approvalStatus: status });
 export const deleteTimesheet = (id) => API.delete(`/timesheets/${id}`);
 
 // Employees
@@ -95,3 +94,7 @@ export const deleteHoliday = (id) => API.delete(`/holidays/${id}`);
 // Approvals
 export const addApproval = (data) => API.post("/approvals", data);
 export const getApprovals = () => API.get("/approvals");
+export const approveTimesheet = (timesheetId, approverName, approvedDescription, approvalType = "Manual") => 
+  API.post(`/approvals/${timesheetId}/approve?approverName=${encodeURIComponent(approverName)}&approvedDescription=${encodeURIComponent(approvedDescription)}&approvalType=${encodeURIComponent(approvalType)}`);
+export const rejectTimesheet = (timesheetId, approverName, approvedDescription, approvalType = "Manual") => 
+  API.post(`/approvals/${timesheetId}/reject?approverName=${encodeURIComponent(approverName)}&approvedDescription=${encodeURIComponent(approvedDescription)}&approvalType=${encodeURIComponent(approvalType)}`);

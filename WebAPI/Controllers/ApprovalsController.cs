@@ -21,6 +21,35 @@ namespace WebAPI.Controllers
             _logger = logger;
         }
 
+        // GET: api/approvals
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<ApprovalDto>>> GetAll()
+        {
+            try
+            {
+                _logger.LogInformation("Getting all approvals");
+                
+                // Get current user's role from token
+                var currentUserRole = User.FindFirst("role")?.Value 
+                    ?? User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value
+                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                
+                // Check if user is System Admin (profile-based)
+                var isSystemAdmin = User.FindFirst("isSystemAdmin")?.Value?.ToLower() == "true";
+                
+                // If System Admin, bypass role filtering
+                string roleForFiltering = isSystemAdmin ? "" : currentUserRole;
+                
+                var approvals = await _approvalService.GetAllAsync(roleForFiltering);
+                return Ok(approvals.Select(MapToDto));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all approvals");
+                return StatusCode(500, new { Message = "An error occurred while retrieving approvals" });
+            }
+        }
+
         // GET: api/approvals/timesheet/{timesheetId}
         [HttpGet("timesheet/{timesheetId}")]
         public async Task<ActionResult<ApprovalDto>> GetByTimesheetId(int timesheetId)
@@ -65,12 +94,12 @@ namespace WebAPI.Controllers
         // POST: api/approvals/{timesheetId}/approve
         [HttpPost("{timesheetId}/approve")]
         [Authorize]
-        public async Task<IActionResult> Approve(int timesheetId, [FromQuery] string approverName, [FromQuery] string approvalType = "Manual")
+        public async Task<IActionResult> Approve(int timesheetId, [FromQuery] string approverName, [FromQuery] string approvedDescription, [FromQuery] string approvalType = "Manual")
         {
             try
             {
                 _logger.LogInformation("Approving timesheet: {TimesheetId} by {ApproverName}", timesheetId, approverName);
-                await _approvalService.ApproveAsync(timesheetId, approverName, approvalType);
+                await _approvalService.ApproveAsync(timesheetId, approverName, approvedDescription, approvalType);
                 _logger.LogInformation("Timesheet approved: {TimesheetId}", timesheetId);
                 return Ok(new { Message = "Timesheet approved successfully" });
             }
@@ -84,12 +113,12 @@ namespace WebAPI.Controllers
         // POST: api/approvals/{timesheetId}/reject
         [HttpPost("{timesheetId}/reject")]
         [Authorize]
-        public async Task<IActionResult> Reject(int timesheetId, [FromQuery] string approverName, [FromQuery] string approvalType = "Manual")
+        public async Task<IActionResult> Reject(int timesheetId, [FromQuery] string approverName, [FromQuery] string approvedDescription, [FromQuery] string approvalType = "Manual")
         {
             try
             {
                 _logger.LogInformation("Rejecting timesheet: {TimesheetId} by {ApproverName}", timesheetId, approverName);
-                await _approvalService.RejectAsync(timesheetId, approverName, approvalType);
+                await _approvalService.RejectAsync(timesheetId, approverName, approvedDescription, approvalType);
                 _logger.LogInformation("Timesheet rejected: {TimesheetId}", timesheetId);
                 return Ok(new { Message = "Timesheet rejected successfully" });
             }
@@ -108,7 +137,8 @@ namespace WebAPI.Controllers
                 TimesheetId = entity.TimesheetId,
                 ApprovedBy = entity.ApprovedBy,
                 ApprovalDate = entity.ApprovalDate,
-                ApprovalType = entity.ApprovalType
+                ApprovalType = entity.ApprovalType,
+                Description = entity.Description
             };
     }
 }

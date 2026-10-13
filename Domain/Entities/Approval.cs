@@ -14,6 +14,7 @@ namespace Domain.Entities;
         public string ApprovedBy { get; set; }
         public DateTime ApprovalDate { get; set; }
         public string ApprovalType { get; set; } // Auto or Manual
+        public string Description { get; set; } = String.Empty;
 
         public Timesheet Timesheet { get; set; }
     }

@@ -6,6 +6,7 @@ import TimesheetForm from "./TimesheetForm";
 import WeeklyTimesheet from "./WeeklyTimesheet";
 import HolidayList from "./HolidayList";
 import PermissionManager from "./PermissionManager";
+import TimesheetApproval from "./TimesheetApproval";
 import { useNavigate } from "react-router-dom";
 import { designSystem } from "../styles/designSystem";
 
@@ -16,10 +17,26 @@ const UnifiedDashboard = () => {
   const fullName = localStorage.getItem("fullName") || "User";
   
   const [permissions, setPermissions] = useState([]);
+  const [userRole, setUserRole] = useState("");
 
   useEffect(() => {
     const perms = JSON.parse(localStorage.getItem("permissions") || "[]");
     setPermissions(perms);
+    
+    // Get user role from token
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
+        const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
+        // Find the highest L-level role
+        const lRoles = rolesArray.filter(r => r.startsWith("L")).sort();
+        setUserRole(lRoles[0] || "");
+      } catch (e) {
+        setUserRole("");
+      }
+    }
     
     // Set default active tab
     setActiveTab("timesheets");
@@ -34,6 +51,9 @@ const UnifiedDashboard = () => {
   };
 
   const hasPerm = (p) => permissions.includes(p);
+
+  // Check if user can see approval tab (L1, L2, L3)
+  const canApprove = ["L1", "L2", "L3"].includes(userRole);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "Roboto, sans-serif" }}>
@@ -63,6 +83,11 @@ const UnifiedDashboard = () => {
                 </label>
               </div>
             )}
+            {canApprove && (
+              <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "approval" ? "bold" : "normal" }} onClick={() => setActiveTab("approval")}>
+                ✅ Timesheet Approval
+              </li>
+            )}
             <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "employees" ? "bold" : "normal" }} onClick={() => setActiveTab("employees")}>
               👤 Employees
             </li>
@@ -85,6 +110,7 @@ const UnifiedDashboard = () => {
         <div style={{ flex: 1, padding: "30px", background: designSystem.colors.background, overflowY: "auto" }}>
           {activeTab === "timesheets" && timesheetMode === "weekly" && <WeeklyTimesheet employeeId={localStorage.getItem("employeeId")} />}
           {activeTab === "timesheets" && timesheetMode === "daily" && <TimesheetForm employeeId={localStorage.getItem("employeeId")} />}
+          {activeTab === "approval" && <TimesheetApproval userRole={userRole} />}
           {activeTab === "employees" && <EmployeeList />}
           {activeTab === "projects" && <ProjectList />}
           {activeTab === "allocations" && <AllocationList />}

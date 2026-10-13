@@ -6,6 +6,7 @@ namespace Application.Interfaces
     {
         Task<Project?> GetByIdAsync(int id);
         Task<IEnumerable<Project>> GetAllAsync();
+        Task<IEnumerable<Project>> GetAllAsync(string currentUserRole);
         Task AddAsync(Project project);
         Task UpdateAsync(Project project);
         Task DeleteAsync(int id);

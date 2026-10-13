@@ -25,14 +25,26 @@ namespace WebAPI.Controllers
             _logger = logger;
         }
 
-        // GET: api/Timesheet
+// GET: api/Timesheet
         [HttpGet()]
         public async Task<ActionResult<IEnumerable<TimesheetDto>>> GetAll()
         {
             try
             {
                 _logger.LogInformation("Getting all timesheets");
-                var timesheets = await _timesheetService.GetAllAsync();
+                
+                // Get current user's role from token
+                var currentUserRole = User.FindFirst("role")?.Value 
+                    ?? User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value
+                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                
+                // Check if user is System Admin (profile-based)
+                var isSystemAdmin = User.FindFirst("isSystemAdmin")?.Value?.ToLower() == "true";
+                
+                // If System Admin, bypass role filtering
+                string roleForFiltering = isSystemAdmin ? "" : currentUserRole;
+                
+                var timesheets = await _timesheetService.GetAllAsync(roleForFiltering);
                 return Ok(_mapper.Map<IEnumerable<TimesheetDto>>(timesheets));
             }
             catch (Exception ex)
@@ -140,7 +152,7 @@ namespace WebAPI.Controllers
             }
         }
 
-// PUT: api/timesheets/approve/{id}
+        // PUT: api/timesheets/approve/{id}
         [HttpPut("approve/{id}")]
         [Authorize]
         public async Task<IActionResult> Approve(int id, [FromBody] ApproveTimesheetDto dto)
@@ -238,6 +250,23 @@ namespace WebAPI.Controllers
                 ApprovalStatus = entity.ApprovalStatus,
                 WeekStartDate = entity.WeekStartDate,
                 WeekEndDate = entity.WeekEndDate,
+                Employee = entity.Employee != null ? new EmployeeDto
+                {
+                    Id = entity.Employee.Id,
+                    Name = entity.Employee.Name,
+                    Email = entity.Employee.Email,
+                    Department = entity.Employee.Department,
+                    Status = entity.Employee.Status
+                } : null,
+                Project = entity.Project != null ? new ProjectDto
+                {
+                    ProjectId = entity.Project.ProjectId,
+                    ProjectName = entity.Project.ProjectName,
+                    ClientId = entity.Project.ClientId,
+                    BusinessUnitId = entity.Project.BusinessUnitId,
+                    StartDate = entity.Project.StartDate,
+                    EndDate = entity.Project.EndDate
+                } : null,
                 Entries = entity.Entries?.Select(e => new TimesheetEntryDto
                 {
                     Id = e.Id,

@@ -15,29 +15,37 @@ namespace Infrastructure.Persistence
             _context = context;
         }
 
-        public async Task<IEnumerable<Timesheet>> GetAllAsync()
+public async Task<IEnumerable<Timesheet>> GetAllAsync()
         {
             return await _context.Timesheets
-                //.Include(p => p.Allocations)
-                //.Include(p => p.Timesheets)
-                .Include(t=> t.Entries)
+                .Include(t => t.Employee)
+                .Include(t => t.Project)
+                .Include(t => t.Entries)
+                .Include(t => t.Approvals)
                 .ToListAsync();
         }
         public async Task<Timesheet> GetByIdAsync(int id)
         {
            return await _context.Timesheets
-                .Include(t => t.Entries)
-                .FirstOrDefaultAsync(t => t.TimesheetId == id);
+                   .Include(t => t.Employee)
+                   .Include(t => t.Project)
+                   .Include(t => t.Entries)
+                   .Include(t => t.Approvals)
+                   .FirstOrDefaultAsync(t => t.TimesheetId == id);
         }
         public async Task<IEnumerable<Timesheet>> GetByEmployeeAndWeekAsync(string employeeId, DateTime weekStart) =>
             await _context.Timesheets
                 .Where(t => t.EmployeeId == employeeId && t.WeekStartDate == weekStart)
+                .Include(t => t.Employee)
+                .Include(t => t.Project)
                 .Include(t => t.Entries)
                 .ToListAsync();
 
         public async Task<IEnumerable<Timesheet>> GetByEmployeeAsync(string employeeId) =>
             await _context.Timesheets
                 .Where(t => t.EmployeeId == employeeId)
+                .Include(t => t.Employee)
+                .Include(t => t.Project)
                 .Include(t => t.Entries)
                 .OrderByDescending(t => t.Date)
                 .ToListAsync();
@@ -67,6 +75,8 @@ namespace Infrastructure.Persistence
         public async Task<IEnumerable<Timesheet>> GetPendingApprovalsAsync() =>
             await _context.Timesheets
                 .Where(t => t.ApprovalStatus == "Submitted")
+                .Include(t => t.Employee)
+                .Include(t => t.Project)
                 .Include(t => t.Entries)
                 .ToListAsync();
 
