@@ -9,11 +9,13 @@ namespace Application.Services
     {
         private readonly IAllocationRepository _repository;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IEmployeeRepository _employeeRepository;
 
-        public AllocationService(IAllocationRepository repository, UserManager<ApplicationUser> userManager)
+        public AllocationService(IAllocationRepository repository, UserManager<ApplicationUser> userManager, Interfaces.IEmployeeRepository employeeRepository)
         {
             _repository = repository;
             _userManager = userManager;
+            _employeeRepository = employeeRepository;
         }
 
         public async Task AddAsync(Allocation allocation) => await _repository.AddAsync(allocation);
@@ -27,14 +29,16 @@ namespace Application.Services
                 return await _repository.GetAllAsync();
 
             var allAllocations = await _repository.GetAllAsync();
-            
+
+            var employee = await _employeeRepository.GetByIdAsync(allAllocations.FirstOrDefault()?.EmployeeId ?? "");
+
             // Role hierarchy: L1 > L2 > L3 > L4
             var allowedRoles = GetAllowedRoles(currentUserRole);
             
             var filteredAllocations = new List<Allocation>();
             foreach (var alloc in allAllocations)
             {
-                var user = await _userManager.FindByIdAsync(alloc.Employee?.UserId ?? "");
+                var user = await _userManager.FindByIdAsync(employee.UserId);
                 if (user != null)
                 {
                     var roles = await _userManager.GetRolesAsync(user);

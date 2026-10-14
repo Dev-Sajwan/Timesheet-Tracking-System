@@ -516,11 +516,8 @@ export default function Timesheets({ employeeId, onSubmitted }) {
           Timesheets
         </h2>
 
-        <Button
-          variant="primary"
-          onClick={handleOpenTimesheetModal}
-        >
-          Create Timesheet
+        <Button variant="primary" onClick={handleOpenTimesheetModal}>
+          Sumit Daily Timesheet
         </Button>
       </div>
 
@@ -1031,36 +1028,21 @@ export default function Timesheets({ employeeId, onSubmitted }) {
               }}
             >
               <div>
-                <h3
-                  style={{
-                    ...designSystem.typography.h2,
-                    margin: 0,
-                    color: designSystem.colors.text
-                  }}
-                >
-                  Create Timesheet
+                <h3 style={{...designSystem.typography.h2, margin: 0, color: designSystem.colors.text}}>
+                  Submit Daily Timesheet
                 </h3>
-
                 <div
-                  style={{
-                    marginTop:
-                      designSystem.spacing.xs,
-                    color:
-                      designSystem.colors
-                        .textSecondary,
+                  style={{marginTop:designSystem.spacing.xs,
+                    color: designSystem.colors.textSecondary,
                     ...designSystem.typography.body
-                  }}
-                >
-                  Enter the employee's daily
-                  working hours.
+                  }}>
+                  Enter the employee's daily working hours.
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={
-                  handleCloseTimesheetModal
-                }
+                onClick={handleCloseTimesheetModal}
                 aria-label="Close"
                 style={{
                   border: "none",
@@ -1163,8 +1145,7 @@ export default function Timesheets({ employeeId, onSubmitted }) {
                     setNewTimesheet(
                       (previous) => ({
                         ...previous,
-                        projectId:
-                          e.target.value
+                        projectId: e.target.value
                       })
                     )
                   }

@@ -308,7 +308,7 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
                     <th style={globalStyles.tableheadercell}>Week Start</th>
                     <th style={globalStyles.tableheadercell}>Total Hours</th>
                     <th style={globalStyles.tableheadercell}>Status</th>
-                    <th style={globalStyles.tableheadercell}>Submitted</th>
+                    <th style={globalStyles.tableheadercell}>Submitted Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -318,7 +318,7 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
                       <tr key={ts.id} style={{ ...globalStyles.tableRowEven }}>
                         <td style={{ ...globalStyles.tableCell }}>{proj?.projectName || `Project ${ts.projectId}`}</td>
                         <td style={{ ...globalStyles.tableCell }}>{ts.weekStartDate ? new Date(ts.weekStartDate).toLocaleDateString("en-GB") : "—"}</td>
-                        <td style={{ ...globalStyles.tableCell }}>{(ts.dailyEntries || []).reduce((sum, e) => sum + (e.hours || 0), 0).toFixed(1)} hrs</td>
+                        <td style={{ ...globalStyles.tableCell }}>{(ts.entries || []).reduce((sum, e) => sum + (e.hours || 0), 0).toFixed(1)} hrs</td>
                         <td style={{ ...globalStyles.tableCell }}>
                           <span style={{ 
                             padding: "2px 8px", 
@@ -332,7 +332,7 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
                             {ts.approvalStatus || "Pending"}
                           </span>
                         </td>
-                        <td style={{ ...globalStyles.tableCell }}>{ts.submittedAt ? new Date(ts.submittedAt).toLocaleDateString() : "—"}</td>
+                        <td style={{ ...globalStyles.tableCell }}>{ts.date ? new Date(ts.date).toLocaleDateString() : "—"}</td>
                       </tr>
                     );
                   })}
