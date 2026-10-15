@@ -1,4 +1,4 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 
@@ -17,9 +17,10 @@ namespace Application.Interfaces
         DbSet<LeaveRecord> LeaveRecords { get; }
         DbSet<Holiday> Holidays { get; }
         DbSet<Approval> Approvals { get; }
-        DbSet<Permission> Permissions { get; }
+        DbSet<Api> Apis { get; }
         DbSet<PermissionSet> PermissionSets { get; }
-        DbSet<RolePermissionSet> RolePermissionSets { get; }
+        DbSet<PermissionSetApi> PermissionSetApis { get; }
+        DbSet<UserPermissionSet> UserPermissionSets { get; }
         DbSet<ApplicationUser> Users { get; }
         Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade Database { get; }
 

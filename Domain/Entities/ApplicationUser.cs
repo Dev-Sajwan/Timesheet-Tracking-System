@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 
 namespace Domain.Entities;
 
@@ -9,4 +9,6 @@ public class ApplicationUser : IdentityUser
 
     public int? ProfileId { get; set; }
     public Profile Profile { get; set; }
+
+    public ICollection<UserPermissionSet> UserPermissionSets { get; set; } = new List<UserPermissionSet>();
 }

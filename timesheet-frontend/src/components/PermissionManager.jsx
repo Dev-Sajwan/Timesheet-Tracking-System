@@ -1,517 +1,543 @@
 import React, { useState, useEffect } from "react";
-import { getRoles, getAllPermissions, getPermissionSets, createPermissionSet, updatePermissionSet, deletePermissionSet, getProfiles, getUsers, assignProfileToUser, getUserProfile, assignPermissionSetToRole, createProfile, updateProfile, deleteProfile } from "../Services/Api";
+import { 
+  getAllApis, 
+  getAdminPermissionSets, 
+  createAdminPermissionSet, 
+  updateAdminPermissionSet, 
+  deleteAdminPermissionSet,
+  getUsers,
+  getUserPermissionSets,
+  assignPermissionSetToUser,
+  unassignPermissionSetFromUser
+} from "../Services/Api";
 import { designSystem, globalStyles } from "../styles/designSystem";
 
 const PermissionManager = () => {
-  const [roles, setRoles] = useState([]);
-  const [permissions, setPermissions] = useState([]);
+  const [apis, setApis] = useState([]);
   const [permissionSets, setPermissionSets] = useState([]);
-  const [profiles, setProfiles] = useState([]);
   const [users, setUsers] = useState([]);
-
-  const [newSetName, setNewSetName] = useState("");
-  const [newSetDescription, setNewSetDescription] = useState("");
-  const [selectedPerms, setSelectedPerms] = useState([]);
-  const [editingSetId, setEditingSetId] = useState(null);
-  const [editingSetName, setEditingSetName] = useState("");
-  const [editingSetDescription, setEditingSetDescription] = useState("");
-
-  const [editingProfileName, setEditingProfileName] = useState("");
-  const [editingProfileDescription, setEditingProfileDescription] = useState("");
-  const [editingIsSystemAdmin, setEditingIsSystemAdmin] = useState(false);
-  const [editingProfileId, setEditingProfileId] = useState(null);
-
-  const [newProfileName, setNewProfileName] = useState("");
-  const [newProfileDescription, setNewProfileDescription] = useState("");
-  const [newIsSystemAdmin, setNewIsSystemAdmin] = useState(false);
-  const [assigningProfileToUser, setAssigningProfileToUser] = useState(null);
-  const [userProfileMap, setUserProfileMap] = useState({});
+  
+  const [activeScreen, setActiveScreen] = useState('sets'); // 'sets', 'editor', 'assign'
+  const [editingSet, setEditingSet] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userPermSets, setUserPermSets] = useState([]);
+  
+  const [formName, setFormName] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formApiIds, setFormApiIds] = useState([]);
+  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedController, setSelectedController] = useState("all");
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
+    setLoading(true);
     try {
-      const [pRes, psRes, rRes, profRes, uRes] = await Promise.all([
-        getAllPermissions(),
-        getPermissionSets(),
-        getRoles(),
-        getProfiles(),
+      const [apisRes, setsRes, usersRes] = await Promise.all([
+        getAllApis(),
+        getAdminPermissionSets(),
         getUsers()
       ]);
-      
-      setPermissions(pRes.data);
-      setPermissionSets(psRes.data);
-      setRoles(rRes.data);
-      setProfiles(profRes.data);
-      setUsers(uRes.data);
-
-      // Build user profile map
-      const map = {};
-      uRes.data.forEach(user => {
-        map[user.id] = user.profileId;
-      });
-      setUserProfileMap(map);
-    } catch(e) {
-      console.error(e);
+      setApis(apisRes.data);
+      setPermissionSets(setsRes.data);
+      setUsers(usersRes.data);
+    } catch (e) {
+      setError("Failed to load data: " + e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Group permissions by category
-  const getPermissionGroups = () => {
+  const clearMessages = () => {
+    setError("");
+    setSuccess("");
+  };
+
+  const getApiGroups = () => {
+    const filteredApis = apis.filter(api => {
+      const matchesSearch = api.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           api.route.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesController = selectedController === "all" || api.controller === selectedController;
+      return matchesSearch && matchesController;
+    });
+
     const groups = {};
-    permissions.forEach(p => {
-      const permName = p.name || p.Name || "";
-      const category = permName.split('.')[0] || "General";
-      if (!groups[category]) {
-        groups[category] = [];
-      }
-      groups[category].push(p);
+    filteredApis.forEach(api => {
+      if (!groups[api.controller]) groups[api.controller] = [];
+      groups[api.controller].push(api);
     });
     return groups;
   };
 
-  const handleCreateSet = async () => {
-    if(!newSetName.trim() || selectedPerms.length === 0) return;
-    try {
-      await createPermissionSet({ 
-        name: newSetName, 
-        description: newSetDescription,
-        permissionIds: selectedPerms 
-      });
-      setNewSetName("");
-      setNewSetDescription("");
-      setSelectedPerms([]);
-      loadData();
-    } catch(e) { console.error(e); }
+  const getControllers = () => {
+    const controllers = [...new Set(apis.map(a => a.controller))].sort();
+    return ["all", ...controllers];
   };
 
-  const handleUpdateSet = async () => {
-    if(!editingSetName.trim() || selectedPerms.length === 0) return;
-    try {
-      await updatePermissionSet(editingSetId, { 
-        name: editingSetName, 
-        description: editingSetDescription,
-        permissionIds: selectedPerms 
-      });
-      setEditingSetId(null);
-      setEditingSetName("");
-      setEditingSetDescription("");
-      setSelectedPerms([]);
-      loadData();
-    } catch(e) { console.error(e); }
+  const isAdminSet = (ps) => ps.isSystem === true;
+
+  const openEditor = (ps) => {
+    setEditingSet(ps);
+    setFormName(ps.name);
+    setFormDescription(ps.description || "");
+    setFormApiIds((ps.apis || ps.permissionSetApis || []).map(a => a.api?.id || a.id) || []);
+    setActiveScreen('editor');
   };
 
   const handleDeleteSet = async (id) => {
+    const ps = permissionSets.find(s => s.id === id);
+    if (isAdminSet(ps)) {
+      setError("Cannot delete the system Admin permission set.");
+      return;
+    }
+    if (!window.confirm('Are you sure you want to delete this permission set?')) return;
+    clearMessages();
     try {
-      await deletePermissionSet(id);
+      await deleteAdminPermissionSet(id);
+      setSuccess('Permission set deleted successfully');
       loadData();
-    } catch(e) { console.error(e); }
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || 'Delete failed');
+    }
   };
 
-  const handleAssign = async (roleId, permissionSetId) => {
+  const handleApiToggle = (apiId) => {
+    setFormApiIds(prev => 
+      prev.includes(apiId) 
+        ? prev.filter(id => id !== apiId)
+        : [...prev, apiId]
+    );
+  };
+
+  const handleSave = async () => {
+    clearMessages();
+    if (!formName.trim()) {
+      setError("Set name is required");
+      return;
+    }
+
+    const isAdmin = editingSet && isAdminSet(editingSet);
+    if (isAdmin) {
+      setError("Cannot modify the system Admin permission set");
+      return;
+    }
+
+    if (formApiIds.length === 0) {
+      setError("At least one API must be selected");
+      return;
+    }
+
+    setLoading(true);
     try {
-      await assignPermissionSetToRole(roleId, permissionSetId);
-      alert("Assigned successfully");
+      if (editingSet) {
+        await updateAdminPermissionSet(editingSet.id, {
+          name: formName,
+          description: formDescription,
+          apiIds: formApiIds
+        });
+        setSuccess("Permission set updated successfully");
+      } else {
+        const result = await createAdminPermissionSet({
+          name: formName,
+          description: formDescription,
+          apiIds: formApiIds
+        });
+        setSuccess("Permission set created successfully");
+      }
       loadData();
-    } catch(e) { console.error(e); }
+      setActiveScreen('sets');
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || "Save failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditSet = (set) => {
-    setEditingSetId(set.id);
-    setEditingSetName(set.name);
-    setEditingSetDescription(set.description || "");
-    
-    // Pre-select the permissions
-    const permIds = set.Permissions ? set.Permissions.map(p => p.id) : [];
-    setSelectedPerms(permIds);
+  const handleCancel = () => {
+    setEditingSet(null);
+    setFormName("");
+    setFormDescription("");
+    setFormApiIds([]);
+    setActiveScreen('sets');
   };
 
-  const handleCreateProfile = async () => {
-    if(!newProfileName.trim()) return;
+  // Screen 1: Permission Sets List
+  const renderSetsList = () => (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.lg }}>
+        <h3 style={designSystem.typography.h3}>Permission Sets</h3>
+        <button 
+          style={globalStyles.button.primary} 
+          onClick={() => {
+            setEditingSet(null);
+            setFormName("");
+            setFormDescription("");
+            setFormApiIds([]);
+            setActiveScreen('editor');
+          }}
+        >
+          + New Set
+        </button>
+      </div>
+
+      {loading && <div>Loading...</div>}
+
+      {permissionSets.length === 0 && !loading && (
+        <div style={{ padding: designSystem.spacing.lg, textAlign: "center" }}>
+          No permission sets found. Create a new one to get started.
+        </div>
+      )}
+
+      {permissionSets.length > 0 && (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{...globalStyles.table, width: "100%"}}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>API Count</th>
+                <th>User Count</th>
+                <th>System</th>
+                <th>Assignable</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {permissionSets.map(ps => (
+                <tr key={ps.id}>
+                  <td>
+                    {isAdminSet(ps) ? (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        🔒 <strong>{ps.name}</strong>
+                      </span>
+                    ) : (
+                      ps.name
+                    )}
+                  </td>
+                  <td>{ps.description || "-"}</td>
+                  <td>{ps.apis?.length || ps.apiCount || 0}</td>
+                  <td>{ps.userCount || 0}</td>
+                  <td>{isAdminSet(ps) ? "Yes 🔒" : "No"}</td>
+                  <td>{ps.isAssignable ? "Yes" : "No"}</td>
+                  <td>
+                    {!isAdminSet(ps) && (
+                      <>
+                        <button 
+                          style={{...globalStyles.button.secondary, marginRight: designSystem.spacing.xs}}
+                          onClick={() => openEditor(ps)}
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          style={{...globalStyles.button.secondary, background: designSystem.colors.error}}
+                          onClick={() => handleDeleteSet(ps.id)}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                    {isAdminSet(ps) && (
+                      <span style={{ color: designSystem.colors.textSecondary, fontSize: "0.85rem" }}>System set (read-only)</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
+  // Screen 2: Permission Set Editor
+  const renderEditor = () => {
+    const groups = getApiGroups();
+    const isAdmin = editingSet && isAdminSet(editingSet);
+
+    const handleApiToggleWrapper = (apiId) => {
+      if (isAdmin) return;
+      handleApiToggle(apiId);
+    };
+
+    return (
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.lg }}>
+          <h3 style={designSystem.typography.h3}>
+            {editingSet ? `Edit: ${editingSet.name}` : "New Permission Set"}
+            {isAdmin && <span style={{ marginLeft: designSystem.spacing.sm, color: designSystem.colors.warning }}>🔒 System Set</span>}
+          </h3>
+          <button style={globalStyles.button.secondary} onClick={handleCancel}>Back to List</button>
+        </div>
+
+        {error && <div style={{...globalStyles.card, background: "#fff5f5", color: designSystem.colors.error, marginBottom: designSystem.spacing.md}}>{error}</div>}
+        {success && <div style={{...globalStyles.card, background: "#f5fff5", color: designSystem.colors.success, marginBottom: designSystem.spacing.md}}>{success}</div>}
+
+        <div style={{...globalStyles.card, marginBottom: designSystem.spacing.lg}}>
+          <div style={{ display: "flex", gap: designSystem.spacing.md, marginBottom: designSystem.spacing.md, flexWrap: "wrap" }}>
+            <input 
+              style={{...globalStyles.input, flex: 1, minWidth: "200px"}}
+              value={formName}
+              onChange={e => setFormName(e.target.value)}
+              placeholder="Set Name"
+              disabled={isAdmin}
+            />
+            <input 
+              style={{...globalStyles.input, flex: 2, minWidth: "300px"}}
+              value={formDescription}
+              onChange={e => setFormDescription(e.target.value)}
+              placeholder="Description"
+              disabled={isAdmin}
+            />
+            {isAdmin && <span style={{ alignSelf: "center", color: designSystem.colors.warning }}>🔒 System set - name/description cannot be changed</span>}
+          </div>
+        </div>
+
+        <div style={{...globalStyles.card, marginBottom: designSystem.spacing.lg}}>
+          <div style={{ display: "flex", gap: designSystem.spacing.md, marginBottom: designSystem.spacing.md, flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              style={{...globalStyles.input, width: "250px"}}
+              type="search"
+              placeholder="Search APIs by name or route..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+            <select style={globalStyles.input} value={selectedController} onChange={e => setSelectedController(e.target.value)}>
+              {getControllers().map(c => (
+                <option key={c} value={c}>{c === "all" ? "All Controllers" : c}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+            {Object.entries(groups).map(([controller, controllerApis]) => (
+              <div key={controller} style={{ marginBottom: designSystem.spacing.lg }}>
+                <h4 style={{ marginBottom: designSystem.spacing.sm, color: designSystem.colors.primary, borderBottom: `1px solid ${designSystem.colors.border}`, paddingBottom: "4px" }}>
+                  {controller} ({controllerApis.length} APIs)
+                </h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: designSystem.spacing.sm }}>
+                  {controllerApis.map(api => {
+                    const isSelected = formApiIds.includes(api.id);
+                    const isSensitive = api.isSensitive;
+
+                    return (
+                      <label 
+                        key={api.id} 
+                        style={{ 
+                          display: "flex", 
+                          alignItems: "center", 
+                          gap: "10px",
+                          padding: "8px 12px",
+                          border: `1px solid ${designSystem.colors.border}`,
+                          borderRadius: "4px",
+                          background: isSensitive ? "#fff8f0" : "transparent",
+                          opacity: (isSensitive || isAdmin) && !isSelected ? 0.6 : 1,
+                          cursor: (isSensitive || isAdmin) && !isSelected ? "not-allowed" : "pointer"
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleApiToggleWrapper(api.id)}
+                          disabled={isSensitive || isAdmin}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {api.name}
+                            </span>
+                            {isSensitive && (
+                              <span 
+                                style={{ 
+                                  background: designSystem.colors.warning, 
+                                  color: "white", 
+                                  padding: "1px 6px", 
+                                  borderRadius: "3px", 
+                                  fontSize: "0.7rem",
+                                  cursor: "help"
+                                }}
+                                title="Sensitive API: Only accessible by Admin users or users with System Administrator profile"
+                              >
+                                🔒 Sensitive
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: "0.8rem", color: designSystem.colors.textSecondary }}>
+                            <code>{api.httpMethod}</code> {api.route}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: designSystem.spacing.md, justifyContent: "flex-end" }}>
+          <button style={globalStyles.button.secondary} onClick={handleCancel}>Cancel</button>
+          <button style={globalStyles.button.primary} onClick={handleSave} disabled={loading}>
+            {loading ? "Saving..." : (editingSet ? "Update" : "Create")}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Screen 3: User Assignment
+  const loadUserPermSets = async (userId) => {
     try {
-      await createProfile({ 
-        name: newProfileName, 
-        description: newProfileDescription,
-        isSystemAdmin: newIsSystemAdmin 
-      });
-      setNewProfileName("");
-      setNewProfileDescription("");
-      setNewIsSystemAdmin(false);
-      loadData();
-    } catch(e) { console.error(e); }
+      const res = await getUserPermissionSets(userId);
+      setUserPermSets(res.data);
+      setSelectedUser(userId);
+    } catch (e) {
+      setError("Failed to load user permission sets: " + e.message);
+    }
   };
 
-  const handleUpdateProfile = async () => {
-    if(!editingProfileName.trim()) return;
+  const handleToggleAssign = async (permissionSetId, currentlyAssigned) => {
+    clearMessages();
     try {
-      await updateProfile(editingProfileId, { 
-        name: editingProfileName, 
-        description: editingProfileDescription,
-        isSystemAdmin: editingIsSystemAdmin 
-      });
-      setEditingProfileId(null);
-      setEditingProfileName("");
-      setEditingProfileDescription("");
-      setEditingIsSystemAdmin(false);
-      loadData();
-    } catch(e) { console.error(e); }
+      if (currentlyAssigned) {
+        await unassignPermissionSetFromUser(selectedUser, permissionSetId);
+        setSuccess("Permission set unassigned");
+      } else {
+        await assignPermissionSetToUser(selectedUser, permissionSetId);
+        setSuccess("Permission set assigned");
+      }
+      loadUserPermSets(selectedUser);
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || "Assignment failed");
+    }
   };
 
-  const handleDeleteProfile = async (id) => {
-    try {
-      await deleteProfile(id);
-      loadData();
-    } catch(e) { console.error(e); }
-  };
+  const renderUserAssignment = () => (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.lg }}>
+        <h3 style={designSystem.typography.h3}>User Permission Set Assignment</h3>
+      </div>
 
-  const handleAssignProfileToUser = async (userId, profileId) => {
-    try {
-      setAssigningProfileToUser(userId);
-      await assignProfileToUser(userId, profileId ? profileId : null);
-      // Update the user profile map
-      setUserProfileMap(prev => ({
-        ...prev,
-        [userId]: profileId ? profileId : null
-      }));
-      setAssigningProfileToUser(null);
-    } catch(e) { console.error(e); }
-  };
+      {error && <div style={{...globalStyles.card, background: "#fff5f5", color: designSystem.colors.error, marginBottom: designSystem.spacing.md}}>{error}</div>}
+      {success && <div style={{...globalStyles.card, background: "#f5fff5", color: designSystem.colors.success, marginBottom: designSystem.spacing.md}}>{success}</div>}
+
+      <div style={{...globalStyles.card, marginBottom: designSystem.spacing.lg}}>
+        <h4>Select User</h4>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: designSystem.spacing.sm }}>
+          {users.map(u => (
+            <button
+              key={u.id}
+              style={{
+                ...globalStyles.button.secondary,
+                background: selectedUser === u.id ? designSystem.colors.primary : globalStyles.button.secondary.background,
+                color: selectedUser === u.id ? "white" : globalStyles.button.secondary.color,
+              }}
+              onClick={() => loadUserPermSets(u.id)}
+            >
+              {u.fullName || u.userName || u.email}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selectedUser && (
+        <div style={{...globalStyles.card}}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md }}>
+            <h4>Assigning to: {users.find(u => u.id === selectedUser)?.fullName || users.find(u => u.id === selectedUser)?.userName}</h4>
+            <button style={globalStyles.button.secondary} onClick={() => setSelectedUser(null)}>Change User</button>
+          </div>
+
+          <table style={{...globalStyles.table, width: "100%"}}>
+            <thead>
+              <tr>
+                <th>Permission Set</th>
+                <th>Description</th>
+                <th>System</th>
+                <th>Current</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {permissionSets.map(ps => {
+                const isAssigned = userPermSets.some(ups => ups.permissionSetId === ps.id);
+                const isAdmin = isAdminSet(ps);
+                
+                return (
+                  <tr key={ps.id} style={{ opacity: isAdmin && !isAssigned ? 0.5 : 1 }}>
+                    <td>
+                      {isAdmin ? <span>🔒 <strong>{ps.name}</strong></span> : ps.name}
+                    </td>
+                    <td>{ps.description || "-"}</td>
+                    <td>{isAdmin ? "Yes 🔒" : "No"}</td>
+                    <td>{isAssigned ? "✅ Assigned" : "Not assigned"}</td>
+                    <td>
+                      {isAdmin && !isAssigned ? (
+                        <span style={{ color: designSystem.colors.textSecondary, fontSize: "0.85rem" }}>System set - auto-assigned to admins</span>
+                      ) : (
+                        <button
+                          style={{
+                            ...globalStyles.button.secondary,
+                            background: isAssigned ? designSystem.colors.error : globalStyles.button.secondary.background,
+                          }}
+                          onClick={() => handleToggleAssign(ps.id, isAssigned)}
+                          disabled={isAdmin && !isAssigned}
+                        >
+                          {isAssigned ? "Remove" : "Assign"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div>
-      <h2 style={designSystem.typography.h2}>Permission Manager</h2>
+      <h2 style={designSystem.typography.h2}>Permission Management</h2>
 
-      {/* Permission Sets Section */}
-      <div style={{...globalStyles.card, marginBottom: designSystem.spacing.lg}}>
-        <h3>Permission Sets</h3>
-        
-        {/* Create/Edit Permission Set Form */}
-        <div style={{ display: 'flex', gap: designSystem.spacing.md, marginBottom: designSystem.spacing.md }}>
-          {editingSetId ? (
-            <>
-              <input 
-                style={globalStyles.input} 
-                value={editingSetName} 
-                onChange={e=>setEditingSetName(e.target.value)} 
-                placeholder="Set Name" 
-              />
-              <input 
-                style={globalStyles.input} 
-                value={editingSetDescription} 
-                onChange={e=>setEditingSetDescription(e.target.value)} 
-                placeholder="Description" 
-              />
-              <button 
-                style={globalStyles.button.primary} 
-                onClick={handleUpdateSet}
-              >
-                Update Set
-              </button>
-              <button 
-                style={{...globalStyles.button.secondary, marginLeft: designSystem.spacing.sm}} 
-                onClick={() => {
-                  setEditingSetId(null);
-                  setEditingSetName("");
-                  setEditingSetDescription("");
-                  setSelectedPerms([]);
-                }}
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <>
-              <input 
-                style={globalStyles.input} 
-                value={newSetName} 
-                onChange={e=>setNewSetName(e.target.value)} 
-                placeholder="Set Name (e.g. L1 Access)" 
-              />
-              <input 
-                style={globalStyles.input} 
-                value={newSetDescription} 
-                onChange={e=>setNewSetDescription(e.target.value)} 
-                placeholder="Description" 
-              />
-              <button 
-                style={globalStyles.button.primary} 
-                onClick={handleCreateSet}
-              >
-                Create Set
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Permission Checkboxes - Grouped */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: designSystem.spacing.md }}>
-          {Object.entries(getPermissionGroups()).map(([category, perms]) => (
-            <div key={category} style={{ border: `1px solid ${designSystem.colors.border}`, borderRadius: '4px', padding: designSystem.spacing.md }}>
-              <h4 style={{ marginTop: 0, color: designSystem.colors.primary }}>{category}</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {perms.map(p => (
-                  <label 
-                    key={p.id} 
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <input 
-                      type="checkbox" 
-                      checked={selectedPerms.includes(p.id)} 
-                      onChange={e => {
-                        if(e.target.checked) 
-                          setSelectedPerms([...selectedPerms, p.id]);
-                        else 
-                          setSelectedPerms(selectedPerms.filter(id => id !== p.id));
-                      }} 
-                    />
-                    <span>{p.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Navigation Tabs */}
+      <div style={{ display: "flex", gap: designSystem.spacing.sm, marginBottom: designSystem.spacing.lg, borderBottom: `1px solid ${designSystem.colors.border}`, paddingBottom: "4px" }}>
+        <button
+          style={{
+            ...globalStyles.button.secondary,
+            background: activeScreen === 'sets' ? designSystem.colors.primary : "transparent",
+            color: activeScreen === 'sets' ? "white" : "inherit",
+            borderColor: activeScreen === 'sets' ? designSystem.colors.primary : "transparent",
+          }}
+          onClick={() => { setActiveScreen('sets'); clearMessages(); }}
+        >
+          📋 Permission Sets
+        </button>
+        <button
+          style={{
+            ...globalStyles.button.secondary,
+            background: activeScreen === 'assign' ? designSystem.colors.primary : "transparent",
+            color: activeScreen === 'assign' ? "white" : "inherit",
+            borderColor: activeScreen === 'assign' ? designSystem.colors.primary : "transparent",
+          }}
+          onClick={() => { setActiveScreen('assign'); clearMessages(); }}
+        >
+          👥 User Assignment
+        </button>
       </div>
 
-      {/* Role Assignment Section */}
-      <div style={{...globalStyles.card, marginBottom: designSystem.spacing.lg}}>
-        <h3>Role Assignment</h3>
-        <table style={{...globalStyles.table, width: '100%'}}>
-          <thead>
-            <tr>
-              <th>Role</th>
-              <th>Permission Set</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roles.map(r => (
-              <tr key={r.id}>
-                <td>{r.name}</td>
-                <td>
-                  <select 
-                    id={`role-select-${r.id}`} 
-                    style={globalStyles.input}
-                    onChange={(e) => {
-                      // Optional: auto-assign when selected
-                    }}
-                  >
-                    <option value="">-- Select Set --</option>
-                    {permissionSets.map(ps => (
-                      <option 
-                        key={ps.id} 
-                        value={ps.id}
-                      >
-                        {ps.name} {ps.description && `(${ps.description})`}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <button 
-                    style={globalStyles.button.secondary} 
-                    onClick={() => {
-                      const val = document.getElementById(`role-select-${r.id}`).value;
-                      if(val) handleAssign(r.id, val);
-                    }}
-                  >
-                    Assign
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {error && <div style={{...globalStyles.card, background: "#fff5f5", color: designSystem.colors.error, marginBottom: designSystem.spacing.md}}>{error}</div>}
+      {success && <div style={{...globalStyles.card, background: "#f5fff5", color: designSystem.colors.success, marginBottom: designSystem.spacing.md}}>{success}</div>}
 
-      {/* Profiles Section */}
-      <div style={{...globalStyles.card, marginBottom: designSystem.spacing.lg}}>
-        <h3>Profiles</h3>
-        
-        {/* Profile Form (simplified) */}
-        <div style={{ display: 'flex', gap: designSystem.spacing.md, marginBottom: designSystem.spacing.md }}>
-          {editingProfileId ? (
-            <>
-              <input 
-                style={globalStyles.input} 
-                value={editingProfileName} 
-                onChange={e=>setEditingProfileName(e.target.value)} 
-                placeholder="Profile Name" 
-              />
-              <input 
-                style={globalStyles.input} 
-                value={editingProfileDescription} 
-                onChange={e=>setEditingProfileDescription(e.target.value)} 
-                placeholder="Description" 
-              />
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <input 
-                  type="checkbox" 
-                  checked={editingIsSystemAdmin} 
-                  onChange={e=>setEditingIsSystemAdmin(e.target.checked)} 
-                />
-                <span>Is System Administrator</span>
-              </label>
-              <button 
-                style={globalStyles.button.primary} 
-                onClick={handleUpdateProfile}
-              >
-                Update Profile
-              </button>
-              <button 
-                style={{...globalStyles.button.secondary, marginLeft: designSystem.spacing.sm}} 
-                onClick={() => {
-                  setEditingProfileId(null);
-                  setEditingProfileName("");
-                  setEditingProfileDescription("");
-                  setEditingIsSystemAdmin(false);
-                }}
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <>
-              <input 
-                style={globalStyles.input} 
-                value={newProfileName} 
-                onChange={e=>setNewProfileName(e.target.value)} 
-                placeholder="Profile Name" 
-              />
-              <input 
-                style={globalStyles.input} 
-                value={newProfileDescription} 
-                onChange={e=>setNewProfileDescription(e.target.value)} 
-                placeholder="Description" 
-              />
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <input 
-                  type="checkbox" 
-                  checked={newIsSystemAdmin} 
-                  onChange={e=>setNewIsSystemAdmin(e.target.checked)} 
-                />
-                <span>Is System Administrator</span>
-              </label>
-              <button 
-                style={globalStyles.button.primary} 
-                onClick={handleCreateProfile}
-              >
-                Create Profile
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Profiles List */}
-        <div style={{ marginTop: designSystem.spacing.md }}>
-          {profiles.map(p => (
-            <div 
-              key={p.profileId} 
-              style={{ 
-                border: `1px solid ${designSystem.colors.border}`, 
-                borderRadius: '4px', 
-                padding: designSystem.spacing.md,
-                marginBottom: designSystem.spacing.sm
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h4 style={{ margin: 0 }}>{p.name}</h4>
-                  <p style={{ margin: '4px 0', color: designSystem.colors.textSecondary }}>{p.description}</p>
-                  {p.isSystemAdmin && <span style={{ 
-                    background: designSystem.colors.warning, 
-                    color: 'white', 
-                    padding: '2px 6px', 
-                    borderRadius: '3px', 
-                    fontSize: '0.8rem'
-                  }}>System Admin</span>}
-                </div>
-                <div>
-                  <button 
-                    style={globalStyles.button.secondary} 
-                    onClick={() => {
-                      // Edit profile - simplified
-                      setEditingProfileId(p.profileId);
-                      setEditingProfileName(p.name);
-                      setEditingProfileDescription(p.description || "");
-                      setEditingIsSystemAdmin(p.isSystemAdmin);
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    style={{...globalStyles.button.secondary, marginLeft: designSystem.spacing.sm, background: designSystem.colors.error}} 
-                    onClick={() => handleDeleteProfile(p.profileId)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-              <div style={{ marginTop: designSystem.spacing.sm, fontSize: '0.9rem' }}>
-                <strong>Users:</strong> {p.userCount || 0}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* User Profile Assignment Section */}
-      <div style={{...globalStyles.card}}>
-        <h3>User Profile Assignment</h3>
-        <table style={{...globalStyles.table, width: '100%'}}>
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Current Profile</th>
-              <th>Assign Profile</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id}>
-                <td>{u.fullName || u.userName || u.email}</td>
-                <td>
-                  {u.profileId ? 
-                    (profiles.find(p => p.profileId === u.profileId)?.name || 'Unknown') : 
-                    'None'
-                  }
-                </td>
-                <td>
-                  <select 
-                    id={`user-profile-select-${u.id}`} 
-                    style={globalStyles.input}
-                  >
-                    <option value="">-- None --</option>
-                    {profiles.map(p => (
-                      <option 
-                        key={p.profileId} 
-                        value={p.profileId}
-                      >
-                        {p.name} {p.isSystemAdmin && ` (System Admin)`}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <button 
-                    style={globalStyles.button.secondary} 
-                    onClick={() => {
-                      const val = document.getElementById(`user-profile-select-${u.id}`).value;
-                      handleAssignProfileToUser(u.id, val ? parseInt(val) : null);
-                    }}
-                    disabled={assigningProfileToUser === u.id}
-                  >
-                    {assigningProfileToUser === u.id ? 'Assigning...' : 'Assign'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {activeScreen === 'sets' && renderSetsList()}
+      {activeScreen === 'editor' && renderEditor()}
+      {activeScreen === 'assign' && renderUserAssignment()}
     </div>
   );
 };

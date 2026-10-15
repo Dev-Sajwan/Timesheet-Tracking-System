@@ -26,6 +26,10 @@ export default function AllocationList() {
   const [clients, setClients] = useState([]);
   const [businessUnits, setBusinessUnits] = useState([]);
 
+  // Permission check
+  // const [permissions, setPermissions] = useState([]);
+  // const hasAllocationPermission = permissions.includes("AddAllocation") || permissions.includes("ManageAllocations");
+
   // Allocation form
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [selectedBusinessUnit, setSelectedBusinessUnit] = useState("");
@@ -41,6 +45,12 @@ export default function AllocationList() {
 
   // Search
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Load permissions from localStorage
+  // useEffect(() => {
+  //   const perms = JSON.parse(localStorage.getItem("permissions") || "[]");
+  //   setPermissions(perms);
+  // }, []);
 
   // Filtered projects based on selected Business Unit
   const filteredProjects = useMemo(() => {
@@ -308,6 +318,8 @@ export default function AllocationList() {
         <Button
           variant="primary"
           onClick={() => setShowAllocationModal(true)}
+          // disabled={!hasAllocationPermission}
+          // title={!hasAllocationPermission ? "You don't have permission to assign projects" : ""}
         >
           Assign Project
         </Button>
@@ -568,6 +580,21 @@ export default function AllocationList() {
                 >
                   Assign one or more employees to a project.
                 </div>
+                {/* {!hasAllocationPermission && (
+                  <div
+                    style={{
+                      marginTop: designSystem.spacing.sm,
+                      padding: designSystem.spacing.sm,
+                      background: "#fff5f5",
+                      border: `1px solid ${designSystem.colors.error}`,
+                      borderRadius: designSystem.radius,
+                      color: designSystem.colors.error,
+                      ...designSystem.typography.body
+                    }}
+                  >
+                    ⚠️ You don't have permission to assign projects. Contact your administrator.
+                  </div>
+                )} */}
               </div>
 
               <button
@@ -813,6 +840,7 @@ export default function AllocationList() {
                 variant="primary"
                 onClick={handleAdd}
                 disabled={
+                  // !hasAllocationPermission ||
                   !selectedBusinessUnit ||
                   !selectedProject ||
                   selectedEmployees.length === 0 ||

@@ -19,6 +19,12 @@ namespace Infrastructure.Persistence
         public async Task<IEnumerable<Holiday>> GetAllAsync() => await _context.Holidays.ToListAsync();
         public async Task<Holiday?> GetByIdAsync(int id) => await _context.Holidays.FindAsync(id);
 
+        public async Task UpdateAsync(Holiday holiday)
+        {
+            _context.Holidays.Update(holiday);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task DeleteAsync(int id)
         {
             var emp = await _context.Holidays.FindAsync(id);

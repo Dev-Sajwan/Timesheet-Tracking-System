@@ -59,6 +59,45 @@ namespace Infrastructure.Migrations
                     b.ToTable("Allocations");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Api", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Controller")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HttpMethod")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsSensitive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Route")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Route", "HttpMethod")
+                        .IsUnique();
+
+                    b.ToTable("Apis");
+                });
+
             modelBuilder.Entity("Domain.Entities.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -322,27 +361,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("LeaveRecords");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Permission", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Permissions");
-                });
-
             modelBuilder.Entity("Domain.Entities.PermissionSet", b =>
                 {
                     b.Property<int>("Id")
@@ -351,17 +369,44 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsAssignable")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.ToTable("PermissionSets");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PermissionSetApi", b =>
+                {
+                    b.Property<int>("PermissionSetId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApiId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PermissionSetId", "ApiId");
+
+                    b.HasIndex("ApiId");
+
+                    b.ToTable("PermissionSetApis");
                 });
 
             modelBuilder.Entity("Domain.Entities.Profile", b =>
@@ -422,28 +467,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("Projects");
                 });
 
-            modelBuilder.Entity("Domain.Entities.RolePermissionSet", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("PermissionSetId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RoleId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PermissionSetId");
-
-                    b.ToTable("RolePermissionSets");
-                });
-
             modelBuilder.Entity("Domain.Entities.TimesheetEntry", b =>
                 {
                     b.Property<int>("Id")
@@ -469,6 +492,28 @@ namespace Infrastructure.Migrations
                     b.HasIndex("TimesheetId");
 
                     b.ToTable("TimesheetEntry");
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserPermissionSet", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("PermissionSetId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AssignedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId", "PermissionSetId");
+
+                    b.HasIndex("PermissionSetId");
+
+                    b.ToTable("UserPermissionSets");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -604,21 +649,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("PermissionPermissionSet", b =>
-                {
-                    b.Property<int>("PermissionSetsId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PermissionsId")
-                        .HasColumnType("int");
-
-                    b.HasKey("PermissionSetsId", "PermissionsId");
-
-                    b.HasIndex("PermissionsId");
-
-                    b.ToTable("PermissionPermissionSet");
-                });
-
             modelBuilder.Entity("Timesheet", b =>
                 {
                     b.Property<int>("TimesheetId")
@@ -744,6 +774,25 @@ namespace Infrastructure.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("Domain.Entities.PermissionSetApi", b =>
+                {
+                    b.HasOne("Domain.Entities.Api", "Api")
+                        .WithMany("ApiPermissionSets")
+                        .HasForeignKey("ApiId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.PermissionSet", "PermissionSet")
+                        .WithMany("PermissionSetApis")
+                        .HasForeignKey("PermissionSetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Api");
+
+                    b.Navigation("PermissionSet");
+                });
+
             modelBuilder.Entity("Domain.Entities.Project", b =>
                 {
                     b.HasOne("Domain.Entities.BusinessUnit", "BusinessUnit")
@@ -762,17 +811,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("Client");
                 });
 
-            modelBuilder.Entity("Domain.Entities.RolePermissionSet", b =>
-                {
-                    b.HasOne("Domain.Entities.PermissionSet", "PermissionSet")
-                        .WithMany()
-                        .HasForeignKey("PermissionSetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("PermissionSet");
-                });
-
             modelBuilder.Entity("Domain.Entities.TimesheetEntry", b =>
                 {
                     b.HasOne("Timesheet", "Timesheet")
@@ -782,6 +820,25 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Timesheet");
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserPermissionSet", b =>
+                {
+                    b.HasOne("Domain.Entities.PermissionSet", "PermissionSet")
+                        .WithMany("UserPermissionSets")
+                        .HasForeignKey("PermissionSetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.ApplicationUser", "User")
+                        .WithMany("UserPermissionSets")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PermissionSet");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -835,21 +892,6 @@ namespace Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("PermissionPermissionSet", b =>
-                {
-                    b.HasOne("Domain.Entities.PermissionSet", null)
-                        .WithMany()
-                        .HasForeignKey("PermissionSetsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Permission", null)
-                        .WithMany()
-                        .HasForeignKey("PermissionsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Timesheet", b =>
                 {
                     b.HasOne("Domain.Entities.Employee", "Employee")
@@ -867,6 +909,16 @@ namespace Infrastructure.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Api", b =>
+                {
+                    b.Navigation("ApiPermissionSets");
+                });
+
+            modelBuilder.Entity("Domain.Entities.ApplicationUser", b =>
+                {
+                    b.Navigation("UserPermissionSets");
                 });
 
             modelBuilder.Entity("Domain.Entities.BusinessUnit", b =>
@@ -888,6 +940,13 @@ namespace Infrastructure.Migrations
                     b.Navigation("LeaveRecords");
 
                     b.Navigation("Timesheets");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PermissionSet", b =>
+                {
+                    b.Navigation("PermissionSetApis");
+
+                    b.Navigation("UserPermissionSets");
                 });
 
             modelBuilder.Entity("Domain.Entities.Profile", b =>

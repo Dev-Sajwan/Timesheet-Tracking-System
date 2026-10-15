@@ -5,10 +5,11 @@ import AllocationList from "./AllocationList";
 import TimesheetForm from "./TimesheetForm";
 import WeeklyTimesheet from "./WeeklyTimesheet";
 import HolidayList from "./HolidayList";
-import PermissionManager from "./PermissionManager";
 import TimesheetApproval from "./TimesheetApproval";
+import PermissionManager from "./PermissionManager";
 import { useNavigate } from "react-router-dom";
 import { designSystem } from "../styles/designSystem";
+import { jwtDecode } from "jwt-decode";
 
 const UnifiedDashboard = () => {
   const [activeTab, setActiveTab] = useState("timesheets");
@@ -18,6 +19,7 @@ const UnifiedDashboard = () => {
   
   const [permissions, setPermissions] = useState([]);
   const [userRole, setUserRole] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const perms = JSON.parse(localStorage.getItem("permissions") || "[]");
@@ -27,14 +29,19 @@ const UnifiedDashboard = () => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
-        const decoded = JSON.parse(atob(token.split('.')[1]));
+        const decoded = jwtDecode(token);
         const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
         const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
         // Find the highest L-level role
         const lRoles = rolesArray.filter(r => r.startsWith("L")).sort();
         setUserRole(lRoles[0] || "");
+        
+        // Check for admin: L1 role or System Admin profile
+        const isSystemAdmin = decoded["IsSystemAdmin"] === "true" || decoded["isSystemAdmin"] === true;
+        setIsAdmin(lRoles.includes("L1") || isSystemAdmin);
       } catch (e) {
         setUserRole("");
+        setIsAdmin(false);
       }
     }
     
@@ -100,9 +107,11 @@ const UnifiedDashboard = () => {
             <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "holidays" ? "bold" : "normal" }} onClick={() => setActiveTab("holidays")}>
               📅 Holidays
             </li>
-            <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "permissions" ? "bold" : "normal" }} onClick={() => setActiveTab("permissions")}>
-              🔒 Permissions
-            </li>
+            {isAdmin && (
+              <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "permissions" ? "bold" : "normal" }} onClick={() => setActiveTab("permissions")}>
+                🔒 Permissions
+              </li>
+            )}
           </ul>
         </div>
 
@@ -115,7 +124,7 @@ const UnifiedDashboard = () => {
           {activeTab === "projects" && <ProjectList />}
           {activeTab === "allocations" && <AllocationList />}
           {activeTab === "holidays" && <HolidayList />}
-          {activeTab === "permissions" && <PermissionManager />}
+          {isAdmin && activeTab === "permissions" && <PermissionManager />}
         </div>
       </div>
     </div>

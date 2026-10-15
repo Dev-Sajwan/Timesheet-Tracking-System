@@ -8,6 +8,7 @@ namespace Application.Interfaces
         Task<IEnumerable<Holiday>> GetAllAsync();
         Task<IEnumerable<Holiday>> GetAllAsync(string currentUserRole);
         Task<Holiday?> GetByIdAsync(int id);
+        Task UpdateAsync(Holiday holiday);
         Task DeleteAsync(int id);
     }
 }

@@ -24,6 +24,7 @@ namespace Application.Services
         }
 
         public async Task<Holiday?> GetByIdAsync(int id) => await _repository.GetByIdAsync(id);
+        public async Task UpdateAsync(Holiday holiday) => await _repository.UpdateAsync(holiday);
         public async Task DeleteAsync(int id) => await _repository.DeleteAsync(id);
     }
 }

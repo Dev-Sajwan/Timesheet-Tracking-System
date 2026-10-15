@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getHolidays, addHoliday, deleteHoliday } from "../Services/Api";
+import { getHolidays, addHoliday, updateHoliday, deleteHoliday } from "../Services/Api";
 import { jwtDecode } from "jwt-decode";
 import { designSystem, globalStyles } from "../styles/designSystem";
 import Modal from "./Modal";
@@ -9,6 +9,7 @@ export default function HolidayList() {
   const [holidays, setHolidays] = useState([]);
   const [newHoliday, setNewHoliday] = useState({ date: "", description: "" });
   const [showForm, setShowForm] = useState(false);
+  const [editingHoliday, setEditingHoliday] = useState(null);
   const [error, setError] = useState("");
   const [canEdit, setCanEdit] = useState(false);
 
@@ -18,13 +19,23 @@ export default function HolidayList() {
   }, []);
 
   const checkPermissions = () => {
+    const perms = JSON.parse(localStorage.getItem("permissions") || "[]");
+    const hasSpecificPerm = perms.includes("AddHoliday") || perms.includes("ManageHolidays") || perms.includes("Admin");
+    
+    if (hasSpecificPerm) {
+      setCanEdit(true);
+      return;
+    }
+    
+    // Fallback to role-based check if specific permissions not found
     const token = localStorage.getItem("token");
     if (token) {
       try {
         const decoded = jwtDecode(token);
         const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
         const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
-        setCanEdit(rolesArray.includes("Admin") || rolesArray.includes("Manager"));
+        const isSystemAdmin = decoded.isSystemAdmin === true || decoded.isSystemAdmin === "true";
+        setCanEdit(rolesArray.includes("Admin") || rolesArray.includes("Manager") || isSystemAdmin);
       } catch (e) {
         setCanEdit(false);
       }
@@ -34,7 +45,9 @@ export default function HolidayList() {
   const loadHolidays = async () => {
     try {
       const res = await getHolidays();
-      setHolidays(res.data);
+      const currentYear = new Date().getFullYear();
+      const filteredHolidays = res.data.filter(h => new Date(h.date).getFullYear() >= currentYear);
+      setHolidays(filteredHolidays);
     } catch (e) {
       setError("Failed to load holidays");
     }
@@ -53,6 +66,29 @@ export default function HolidayList() {
       loadHolidays();
     } catch (e) {
       setError(e.response?.data?.message || "Failed to add holiday");
+    }
+  };
+
+  const handleEditHoliday = (holiday) => {
+    setEditingHoliday(holiday);
+    setNewHoliday({ date: holiday.date.split('T')[0], description: holiday.description });
+    setShowForm(true);
+  };
+
+  const handleUpdateHoliday = async () => {
+    if (!newHoliday.date || !newHoliday.description) {
+      setError("Date and description are required");
+      return;
+    }
+    setError("");
+    try {
+      await updateHoliday(editingHoliday.holidayId, newHoliday);
+      setNewHoliday({ date: "", description: "" });
+      setEditingHoliday(null);
+      setShowForm(false);
+      loadHolidays();
+    } catch (e) {
+      setError(e.response?.data?.message || "Failed to update holiday");
     }
   };
 
@@ -99,12 +135,14 @@ export default function HolidayList() {
 
       <Modal
         isOpen={showForm && canEdit}
-        onClose={() => setShowForm(false)}
-        title="Add Holiday"
+        onClose={() => { setShowForm(false); setEditingHoliday(null); }}
+        title={editingHoliday ? "Edit Holiday" : "Add Holiday"}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button variant="primary" onClick={handleAddHoliday}>Save</Button>
+            <Button variant="secondary" onClick={() => { setShowForm(false); setEditingHoliday(null); }}>Cancel</Button>
+            <Button variant="primary" onClick={editingHoliday ? handleUpdateHoliday : handleAddHoliday}>
+              {editingHoliday ? "Update" : "Save"}
+            </Button>
           </>
         }
       >
@@ -154,7 +192,8 @@ export default function HolidayList() {
                       )}
                     </td>
                     {canEdit && (
-                      <td style={{ ...globalStyles.tableCell }}>
+                      <td style={{ ...globalStyles.tableCell, display: "flex", gap: designSystem.spacing.xs }}>
+                        <Button variant="secondary" size="small" onClick={() => handleEditHoliday(h)}>Edit</Button>
                         <Button variant="secondary" size="small" onClick={() => handleDelete(h.holidayId)} style={{ background: designSystem.colors.error, color: designSystem.colors.white }}>Delete</Button>
                       </td>
                     )}

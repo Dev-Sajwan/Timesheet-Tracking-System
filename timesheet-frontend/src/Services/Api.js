@@ -21,8 +21,20 @@ export const getPermissionSets = () => API.get("/permissions/permission-sets");
 export const createPermissionSet = (data) => API.post("/permissions/permission-sets", data);
 export const updatePermissionSet = (id, data) => API.put(`/permissions/permission-sets/${id}`, data);
 export const deletePermissionSet = (id) => API.delete(`/permissions/permission-sets/${id}`);
-export const getRoles = () => API.get("/permissions/roles");
 export const assignPermissionSetToRole = (roleId, permissionSetId) => API.post(`/permissions/roles/${roleId}/permission-set/${permissionSetId}`);
+
+// Admin Permission Management (New)
+export const getAllApis = () => API.get("/admin/apis");
+export const getAdminPermissionSets = () => API.get("/admin/permission-sets");
+export const createAdminPermissionSet = (data) => API.post("/admin/permission-sets", data);
+export const updateAdminPermissionSet = (id, data) => API.put(`/admin/permission-sets/${id}`, data);
+export const deleteAdminPermissionSet = (id) => API.delete(`/admin/permission-sets/${id}`);
+export const addApiToPermissionSet = (permissionSetId, apiId) => API.post(`/admin/permission-sets/${permissionSetId}/apis/${apiId}`);
+export const removeApiFromPermissionSet = (permissionSetId, apiId) => API.delete(`/admin/permission-sets/${permissionSetId}/apis/${apiId}`);
+export const getUserPermissionSets = (userId) => API.get(`/admin/users/${userId}/permission-sets`);
+export const assignPermissionSetToUser = (userId, permissionSetId) => API.post(`/admin/users/${userId}/permission-sets/${permissionSetId}`);
+export const unassignPermissionSetFromUser = (userId, permissionSetId) => API.delete(`/admin/users/${userId}/permission-sets/${permissionSetId}`);
+export const getRoles = () => API.get("/admin/roles");
 
 // Profiles
 export const getProfiles = () => API.get("/profile/profiles");
@@ -89,6 +101,7 @@ export const getLeaveRecords = () => API.get("/leaverecords");
 // Holidays
 export const addHoliday = (data) => API.post("/holidays", data);
 export const getHolidays = () => API.get("/holidays");
+export const updateHoliday = (id, data) => API.put(`/holidays/${id}`, data);
 export const deleteHoliday = (id) => API.delete(`/holidays/${id}`);
 
 // Approvals

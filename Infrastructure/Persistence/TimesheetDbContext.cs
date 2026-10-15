@@ -1,8 +1,7 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
 
 namespace Infrastructure.Persistence
 {
@@ -21,9 +20,10 @@ namespace Infrastructure.Persistence
         public DbSet<LeaveRecord> LeaveRecords { get; set; }
         public DbSet<Holiday> Holidays { get; set; }
         public DbSet<Approval> Approvals { get; set; }
-        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<Api> Apis { get; set; }
         public DbSet<PermissionSet> PermissionSets { get; set; }
-        public DbSet<RolePermissionSet> RolePermissionSets { get; set; }
+        public DbSet<PermissionSetApi> PermissionSetApis { get; set; }
+        public DbSet<UserPermissionSet> UserPermissionSets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -55,6 +55,39 @@ namespace Infrastructure.Persistence
                 .WithMany(p => p.Users)
                 .HasForeignKey(u => u.ProfileId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure Api entity
+            builder.Entity<Api>()
+                .HasIndex(a => new { a.Route, a.HttpMethod })
+                .IsUnique();
+
+            // Configure many-to-many between Api and PermissionSet via PermissionSetApi
+            builder.Entity<PermissionSetApi>()
+                .HasKey(psa => new { psa.PermissionSetId, psa.ApiId });
+
+            builder.Entity<PermissionSetApi>()
+                .HasOne(psa => psa.PermissionSet)
+                .WithMany(ps => ps.PermissionSetApis)
+                .HasForeignKey(psa => psa.PermissionSetId);
+
+            builder.Entity<PermissionSetApi>()
+                .HasOne(psa => psa.Api)
+                .WithMany(a => a.ApiPermissionSets)
+                .HasForeignKey(psa => psa.ApiId);
+
+            // Configure UserPermissionSet
+            builder.Entity<UserPermissionSet>()
+                .HasKey(ups => new { ups.UserId, ups.PermissionSetId });
+
+            builder.Entity<UserPermissionSet>()
+                .HasOne(ups => ups.User)
+                .WithMany(u => u.UserPermissionSets)
+                .HasForeignKey(ups => ups.UserId);
+
+            builder.Entity<UserPermissionSet>()
+                .HasOne(ups => ups.PermissionSet)
+                .WithMany(ps => ps.UserPermissionSets)
+                .HasForeignKey(ups => ups.PermissionSetId);
         }
     }
 }

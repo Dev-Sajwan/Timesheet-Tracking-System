@@ -110,12 +110,33 @@ namespace WebAPI.Controllers
                 _logger.LogInformation("Deleting holiday: {HolidayId}", id);
                 await _holidayService.DeleteAsync(id);
                 _logger.LogInformation("Holiday deleted successfully: {HolidayId}", id);
-                return NoContent();
+                return Ok("Record deleted sucessfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting holiday: {HolidayId}", id);
                 return StatusCode(500, new { Message = "An error occurred while deleting the holiday" });
+            }
+        }
+
+        // PUT: api/holidays/{id} (Admin, Manager only)
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Update(int id, [FromBody] HolidayDto dto)
+        {
+            try
+            {
+                _logger.LogInformation("Updating holiday: {HolidayId}", id);
+                var holiday = _mapper.Map<Holiday>(dto);
+                holiday.HolidayId = id;
+                await _holidayService.UpdateAsync(holiday);
+                _logger.LogInformation("Holiday updated successfully: {HolidayId}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating holiday: {HolidayId}", id);
+                return StatusCode(500, new { Message = "An error occurred while updating the holiday" });
             }
         }
     }
