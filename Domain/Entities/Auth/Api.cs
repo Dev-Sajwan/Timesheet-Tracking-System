@@ -11,5 +11,6 @@ namespace Domain.Entities
         public bool IsSensitive { get; set; }
 
         public ICollection<PermissionSetApi> ApiPermissionSets { get; set; } = new List<PermissionSetApi>();
+        public ICollection<PermissionApi> PermissionApis { get; set; } = new List<PermissionApi>();
     }
 }

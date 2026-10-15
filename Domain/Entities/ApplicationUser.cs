@@ -11,4 +11,5 @@ public class ApplicationUser : IdentityUser
     public Profile Profile { get; set; }
 
     public ICollection<UserPermissionSet> UserPermissionSets { get; set; } = new List<UserPermissionSet>();
+    public ICollection<UserPermission> UserPermissions { get; set; } = new List<UserPermission>();
 }

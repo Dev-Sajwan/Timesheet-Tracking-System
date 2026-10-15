@@ -18,9 +18,13 @@ namespace Application.Interfaces
         DbSet<Holiday> Holidays { get; }
         DbSet<Approval> Approvals { get; }
         DbSet<Api> Apis { get; }
+        DbSet<Permission> Permissions { get; }
+        DbSet<PermissionApi> PermissionApis { get; }
         DbSet<PermissionSet> PermissionSets { get; }
         DbSet<PermissionSetApi> PermissionSetApis { get; }
+        DbSet<PermissionSetPermission> PermissionSetPermissions { get; }
         DbSet<UserPermissionSet> UserPermissionSets { get; }
+        DbSet<UserPermission> UserPermissions { get; }
         DbSet<ApplicationUser> Users { get; }
         Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade Database { get; }
 

@@ -78,6 +78,10 @@ foreach (var provider in ((IConfigurationRoot)builder.Configuration).Providers)
 builder.Services.AddControllers(options =>
 {
     // Global authorization filter removed - use [Authorize] and [PermissionAuthorize] attributes on controllers/actions as needed
+})
+.AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>

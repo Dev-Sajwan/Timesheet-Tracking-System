@@ -21,9 +21,13 @@ namespace Infrastructure.Persistence
         public DbSet<Holiday> Holidays { get; set; }
         public DbSet<Approval> Approvals { get; set; }
         public DbSet<Api> Apis { get; set; }
+        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<PermissionApi> PermissionApis { get; set; }
         public DbSet<PermissionSet> PermissionSets { get; set; }
         public DbSet<PermissionSetApi> PermissionSetApis { get; set; }
+        public DbSet<PermissionSetPermission> PermissionSetPermissions { get; set; }
         public DbSet<UserPermissionSet> UserPermissionSets { get; set; }
+        public DbSet<UserPermission> UserPermissions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -88,6 +92,52 @@ namespace Infrastructure.Persistence
                 .HasOne(ups => ups.PermissionSet)
                 .WithMany(ps => ps.UserPermissionSets)
                 .HasForeignKey(ups => ups.PermissionSetId);
+
+            // Configure Permission entity
+            builder.Entity<Permission>()
+                .HasKey(p => p.Id);
+
+            // Configure many-to-many between Permission and Api via PermissionApi
+            builder.Entity<PermissionApi>()
+                .HasKey(pa => new { pa.PermissionId, pa.ApiId });
+
+            builder.Entity<PermissionApi>()
+                .HasOne(pa => pa.Permission)
+                .WithMany(p => p.PermissionApis)
+                .HasForeignKey(pa => pa.PermissionId);
+
+            builder.Entity<PermissionApi>()
+                .HasOne(pa => pa.Api)
+                .WithMany(a => a.PermissionApis)
+                .HasForeignKey(pa => pa.ApiId);
+
+            // Configure PermissionSetPermission (many-to-many)
+            builder.Entity<PermissionSetPermission>()
+                .HasKey(psp => new { psp.PermissionSetId, psp.PermissionId });
+
+            builder.Entity<PermissionSetPermission>()
+                .HasOne(psp => psp.PermissionSet)
+                .WithMany(ps => ps.PermissionSetPermissions)
+                .HasForeignKey(psp => psp.PermissionSetId);
+
+            builder.Entity<PermissionSetPermission>()
+                .HasOne(psp => psp.Permission)
+                .WithMany(p => p.PermissionSetPermissions)
+                .HasForeignKey(psp => psp.PermissionId);
+
+            // Configure UserPermission
+            builder.Entity<UserPermission>()
+                .HasKey(up => new { up.UserId, up.PermissionId });
+
+            builder.Entity<UserPermission>()
+                .HasOne(up => up.User)
+                .WithMany(u => u.UserPermissions)
+                .HasForeignKey(up => up.UserId);
+
+            builder.Entity<UserPermission>()
+                .HasOne(up => up.Permission)
+                .WithMany(p => p.UserPermissions)
+                .HasForeignKey(up => up.PermissionId);
         }
     }
 }

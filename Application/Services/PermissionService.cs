@@ -10,14 +10,24 @@ namespace Application.Services
     public interface IPermissionService
     {
         Task<IEnumerable<Api>> GetAllApisAsync();
+        Task<IEnumerable<Permission>> GetAllPermissionsAsync();
+        Task<Permission> CreatePermissionAsync(string name, string description, List<int> apiIds, bool isSensitive);
+        Task<Permission> UpdatePermissionAsync(int id, string name, string description, List<int> apiIds, bool isSensitive);
+        Task DeletePermissionAsync(int id);
+
         Task<IEnumerable<PermissionSet>> GetAllPermissionSetsAsync();
-        Task<PermissionSet> CreatePermissionSetAsync(string name, string description, List<int> apiIds);
-        Task<PermissionSet> UpdatePermissionSetAsync(int id, string name, string description, List<int> apiIds);
+        Task<PermissionSet> CreatePermissionSetAsync(string name, string description, List<int> permissionIds);
+        Task<PermissionSet> UpdatePermissionSetAsync(int id, string name, string description, List<int> permissionIds);
         Task DeletePermissionSetAsync(int id);
+
         Task<List<string>> GetUserPermissionsAsync(string userId);
         Task<bool> HasAccess(string userId, string apiRoute, string httpMethod);
 
-        // Profile-related methods (unchanged)
+        Task AssignPermissionToUserAsync(string userId, int permissionId, string assignedBy);
+        Task UnassignPermissionFromUserAsync(string userId, int permissionId);
+        Task AssignPermissionSetToUserAsync(string userId, int permissionSetId, string assignedBy);
+        Task UnassignPermissionSetFromUserAsync(string userId, int permissionSetId);
+
         Task<IEnumerable<Profile>> GetAllProfilesAsync();
         Task<Profile> CreateProfileAsync(string name, string description, bool isSystemAdmin);
         Task<Profile> UpdateProfileAsync(int id, string name, string description, bool isSystemAdmin);
@@ -47,25 +57,98 @@ namespace Application.Services
             });
         }
 
+        public async Task<IEnumerable<Permission>> GetAllPermissionsAsync()
+        {
+            return await _cache.GetOrCreateAsync("all_permissions", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = _cacheExpiration;
+                return await _context.Permissions
+                    .Include(p => p.PermissionApis)
+                        .ThenInclude(pa => pa.Api)
+                    .ToListAsync();
+            });
+        }
+
+        public async Task<Permission> CreatePermissionAsync(string name, string description, List<int> apiIds, bool isSensitive)
+        {
+            var permission = new Permission
+            {
+                Name = name,
+                Description = description,
+                IsSensitive = isSensitive
+            };
+
+            var apis = await _context.Apis.Where(a => apiIds.Contains(a.Id)).ToListAsync();
+            foreach (var api in apis)
+            {
+                permission.PermissionApis.Add(new PermissionApi { Api = api });
+            }
+
+            _context.Permissions.Add(permission);
+            await _context.SaveChangesAsync();
+            InvalidatePermissionCache();
+            return permission;
+        }
+
+        public async Task<Permission> UpdatePermissionAsync(int id, string name, string description, List<int> apiIds, bool isSensitive)
+        {
+            var permission = await _context.Permissions
+                .Include(p => p.PermissionApis)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            if (permission == null) return null;
+
+            permission.Name = name;
+            permission.Description = description;
+            permission.IsSensitive = isSensitive;
+
+            _context.PermissionApis.RemoveRange(permission.PermissionApis);
+
+            var apis = await _context.Apis.Where(a => apiIds.Contains(a.Id)).ToListAsync();
+            foreach (var api in apis)
+            {
+                permission.PermissionApis.Add(new PermissionApi { Api = api });
+            }
+
+            await _context.SaveChangesAsync();
+            InvalidatePermissionCache();
+            return permission;
+        }
+
+        public async Task DeletePermissionAsync(int id)
+        {
+            var permission = await _context.Permissions
+                .Include(p => p.PermissionApis)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            if (permission != null)
+            {
+                _context.PermissionApis.RemoveRange(permission.PermissionApis);
+                _context.Permissions.Remove(permission);
+                await _context.SaveChangesAsync();
+                InvalidatePermissionCache();
+            }
+        }
+
         public async Task<IEnumerable<PermissionSet>> GetAllPermissionSetsAsync()
         {
             return await _cache.GetOrCreateAsync("all_permission_sets", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = _cacheExpiration;
                 return await _context.PermissionSets
-                    .Include(ps => ps.PermissionSetApis)
-                        .ThenInclude(psa => psa.Api)
+                    .Include(ps => ps.PermissionSetPermissions)
+                        .ThenInclude(psp => psp.Permission)
+                            .ThenInclude(p => p.PermissionApis)
+                                .ThenInclude(pa => pa.Api)
                     .ToListAsync();
             });
         }
 
-        public async Task<PermissionSet> CreatePermissionSetAsync(string name, string description, List<int> apiIds)
+        public async Task<PermissionSet> CreatePermissionSetAsync(string name, string description, List<int> permissionIds)
         {
             var ps = new PermissionSet { Name = name, Description = description };
-            var apis = await _context.Apis.Where(a => apiIds.Contains(a.Id)).ToListAsync();
-            foreach (var api in apis)
+            var permissions = await _context.Permissions.Where(p => permissionIds.Contains(p.Id)).ToListAsync();
+            foreach (var perm in permissions)
             {
-                ps.PermissionSetApis.Add(new PermissionSetApi { Api = api });
+                ps.PermissionSetPermissions.Add(new PermissionSetPermission { Permission = perm });
             }
             _context.PermissionSets.Add(ps);
             await _context.SaveChangesAsync();
@@ -73,24 +156,22 @@ namespace Application.Services
             return ps;
         }
 
-        public async Task<PermissionSet> UpdatePermissionSetAsync(int id, string name, string description, List<int> apiIds)
+        public async Task<PermissionSet> UpdatePermissionSetAsync(int id, string name, string description, List<int> permissionIds)
         {
             var ps = await _context.PermissionSets
-                .Include(x => x.PermissionSetApis)
+                .Include(x => x.PermissionSetPermissions)
                 .FirstOrDefaultAsync(x => x.Id == id);
             if (ps == null) return null;
 
             ps.Name = name;
             ps.Description = description;
 
-            // Remove existing API links
-            _context.PermissionSetApis.RemoveRange(ps.PermissionSetApis);
+            _context.PermissionSetPermissions.RemoveRange(ps.PermissionSetPermissions);
 
-            // Add new API links
-            var apis = await _context.Apis.Where(a => apiIds.Contains(a.Id)).ToListAsync();
-            foreach (var api in apis)
+            var permissions = await _context.Permissions.Where(p => permissionIds.Contains(p.Id)).ToListAsync();
+            foreach (var perm in permissions)
             {
-                ps.PermissionSetApis.Add(new PermissionSetApi { Api = api });
+                ps.PermissionSetPermissions.Add(new PermissionSetPermission { Permission = perm });
             }
 
             await _context.SaveChangesAsync();
@@ -100,10 +181,10 @@ namespace Application.Services
 
         public async Task DeletePermissionSetAsync(int id)
         {
-            var ps = await _context.PermissionSets.Include(ps => ps.PermissionSetApis).FirstOrDefaultAsync(x => x.Id == id);
+            var ps = await _context.PermissionSets.Include(ps => ps.PermissionSetPermissions).FirstOrDefaultAsync(x => x.Id == id);
             if (ps != null)
             {
-                _context.PermissionSetApis.RemoveRange(ps.PermissionSetApis);
+                _context.PermissionSetPermissions.RemoveRange(ps.PermissionSetPermissions);
                 _context.PermissionSets.Remove(ps);
                 await _context.SaveChangesAsync();
                 InvalidatePermissionCache();
@@ -119,21 +200,45 @@ namespace Application.Services
                 
                 var permissionNames = new List<string>();
 
-                // Get permission sets assigned directly to the user
+                // Get direct permission assignments
+                var userPermissions = await _context.UserPermissions
+                    .Include(up => up.Permission)
+                        .ThenInclude(p => p.PermissionApis)
+                            .ThenInclude(pa => pa.Api)
+                    .Where(up => up.UserId == userId)
+                    .ToListAsync();
+
+                foreach (var up in userPermissions)
+                {
+                    permissionNames.Add(up.Permission.Name);
+                }
+
+                // Get permission sets assigned to the user
                 var userPermissionSets = await _context.UserPermissionSets
                     .Include(ups => ups.PermissionSet)
-                        .ThenInclude(ps => ps.PermissionSetApis)
-                            .ThenInclude(psa => psa.Api)
+                        .ThenInclude(ps => ps.PermissionSetPermissions)
+                            .ThenInclude(psp => psp.Permission)
+                                .ThenInclude(p => p.PermissionApis)
+                                    .ThenInclude(pa => pa.Api)
                     .Where(ups => ups.UserId == userId)
                     .ToListAsync();
 
                 foreach (var ups in userPermissionSets)
                 {
-                    permissionNames.AddRange(ups.PermissionSet.PermissionSetApis.Select(psa => psa.Api.Name));
+                    permissionNames.AddRange(ups.PermissionSet.PermissionSetPermissions.Select(psp => psp.Permission.Name));
                 }
 
-                // TODO: Also include permission sets from roles if we decide to keep role-based assignment
-                // For now, we only consider user-assigned permission sets.
+                // If user has System Admin profile, they get all permissions
+                var hasAdminProfile = await _context.Users
+                    .Where(u => u.Id == userId)
+                    .Select(u => u.Profile)
+                    .AnyAsync(p => p != null && p.IsSystemAdmin);
+
+                if (hasAdminProfile)
+                {
+                    var allPermissions = await _context.Permissions.Select(p => p.Name).ToListAsync();
+                    permissionNames.AddRange(allPermissions);
+                }
 
                 return permissionNames.Distinct().ToList();
             });
@@ -146,10 +251,12 @@ namespace Application.Services
             {
                 entry.AbsoluteExpirationRelativeToNow = _cacheExpiration;
 
-                // 1. If the user is in the Admin set, return true.
-                var isAdmin = await _context.UserPermissionSets
-                    .AnyAsync(ups => ups.UserId == userId && ups.PermissionSet.IsSystem);
-                if (isAdmin)
+                // 1. Check if user has System Admin profile - gets all access
+                var hasAdminProfile = await _context.Users
+                    .Where(u => u.Id == userId)
+                    .Select(u => u.Profile)
+                    .AnyAsync(p => p != null && p.IsSystemAdmin);
+                if (hasAdminProfile)
                 {
                     return true;
                 }
@@ -162,28 +269,100 @@ namespace Application.Services
                     return false;
                 }
 
-                // 3. If IsSensitive is true, return true only if the user has the designated profile.
-                if (api.IsSensitive)
+                // 3. Check if user has direct permission that includes this API
+                var hasDirectPermission = await _context.UserPermissions
+                    .Include(up => up.Permission)
+                        .ThenInclude(p => p.PermissionApis)
+                    .AnyAsync(up => up.UserId == userId && 
+                                     up.Permission.PermissionApis.Any(pa => pa.ApiId == api.Id));
+                if (hasDirectPermission)
                 {
-                    var hasAdminProfile = await _context.Users
-                        .Where(u => u.Id == userId)
-                        .Select(u => u.Profile)
-                        .AnyAsync(p => p.IsSystemAdmin);
-                    return hasAdminProfile;
+                    return true;
                 }
 
-                // 4. Otherwise, return true if any of the user's permission sets contains this API.
-                return await _context.UserPermissionSets
+                // 4. Check if user has permission set that contains permission for this API
+                var hasPermissionSetAccess = await _context.UserPermissionSets
+                    .Include(ups => ups.PermissionSet)
+                        .ThenInclude(ps => ps.PermissionSetPermissions)
+                            .ThenInclude(psp => psp.Permission)
+                                .ThenInclude(p => p.PermissionApis)
                     .AnyAsync(ups => ups.UserId == userId && 
-                                     ups.PermissionSet.PermissionSetApis.Any(psa => psa.Api.Id == api.Id));
+                                     ups.PermissionSet.PermissionSetPermissions.Any(psp => 
+                                         psp.Permission.PermissionApis.Any(pa => pa.ApiId == api.Id)));
+                if (hasPermissionSetAccess)
+                {
+                    return true;
+                }
+
+                return false;
             });
+        }
+
+        public async Task AssignPermissionToUserAsync(string userId, int permissionId, string assignedBy)
+        {
+            var existing = await _context.UserPermissions
+                .FirstOrDefaultAsync(up => up.UserId == userId && up.PermissionId == permissionId);
+            if (existing != null) return;
+
+            var userPermission = new UserPermission
+            {
+                UserId = userId,
+                PermissionId = permissionId,
+                AssignedAt = DateTime.UtcNow,
+                AssignedBy = assignedBy
+            };
+            _context.UserPermissions.Add(userPermission);
+            await _context.SaveChangesAsync();
+            InvalidatePermissionCache();
+        }
+
+        public async Task UnassignPermissionFromUserAsync(string userId, int permissionId)
+        {
+            var userPermission = await _context.UserPermissions
+                .FirstOrDefaultAsync(up => up.UserId == userId && up.PermissionId == permissionId);
+            if (userPermission != null)
+            {
+                _context.UserPermissions.Remove(userPermission);
+                await _context.SaveChangesAsync();
+                InvalidatePermissionCache();
+            }
+        }
+
+        public async Task AssignPermissionSetToUserAsync(string userId, int permissionSetId, string assignedBy)
+        {
+            var existing = await _context.UserPermissionSets
+                .FirstOrDefaultAsync(ups => ups.UserId == userId && ups.PermissionSetId == permissionSetId);
+            if (existing != null) return;
+
+            var userPermissionSet = new UserPermissionSet
+            {
+                UserId = userId,
+                PermissionSetId = permissionSetId,
+                AssignedAt = DateTime.UtcNow,
+                AssignedBy = assignedBy
+            };
+            _context.UserPermissionSets.Add(userPermissionSet);
+            await _context.SaveChangesAsync();
+            InvalidatePermissionCache();
+        }
+
+        public async Task UnassignPermissionSetFromUserAsync(string userId, int permissionSetId)
+        {
+            var userPermissionSet = await _context.UserPermissionSets
+                .FirstOrDefaultAsync(ups => ups.UserId == userId && ups.PermissionSetId == permissionSetId);
+            if (userPermissionSet != null)
+            {
+                _context.UserPermissionSets.Remove(userPermissionSet);
+                await _context.SaveChangesAsync();
+                InvalidatePermissionCache();
+            }
         }
 
         public void InvalidatePermissionCache()
         {
             _cache.Remove("all_apis");
+            _cache.Remove("all_permissions");
             _cache.Remove("all_permission_sets");
-            // Note: User-specific caches will expire naturally or could be invalidated by pattern if needed
         }
 
         public async Task<IEnumerable<Profile>> GetAllProfilesAsync()

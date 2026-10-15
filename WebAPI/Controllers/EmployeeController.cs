@@ -68,7 +68,7 @@ namespace WebAPI.Controllers
             }
         }
 
-[HttpGet]
+        [HttpGet]
         public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetAll()
         {
             try
@@ -178,15 +178,8 @@ namespace WebAPI.Controllers
                     EmailConfirmed = true
                 };
 
-                var createResult = await _userManager.CreateAsync(user, defaultPassword);
-                if (!createResult.Succeeded)
-                {
-                    _logger.LogError("Failed to create Identity user: {Errors}", string.Join(", ", createResult.Errors.Select(e => e.Description)));
-                    return BadRequest(new { Message = "Failed to create user", Errors = createResult.Errors });
-                }
-
                 // Assign Employee role by default
-                var roleResult = await _userManager.AddToRoleAsync(user, "Employee");
+                var roleResult = await _userManager.AddToRoleAsync(user, "L4");
                 if (!roleResult.Succeeded)
                 {
                     // Cleanup user if role assignment fails
@@ -194,6 +187,15 @@ namespace WebAPI.Controllers
                     _logger.LogError("Failed to assign role to user: {Errors}", string.Join(", ", roleResult.Errors.Select(e => e.Description)));
                     return BadRequest(new { Message = "Failed to assign role", Errors = roleResult.Errors });
                 }
+
+                var createResult = await _userManager.CreateAsync(user, defaultPassword);
+                if (!createResult.Succeeded)
+                {
+                    _logger.LogError("Failed to create Identity user: {Errors}", string.Join(", ", createResult.Errors.Select(e => e.Description)));
+                    return BadRequest(new { Message = "Failed to create user", Errors = createResult.Errors });
+                }
+
+                
 
                 // Create Employee record linked to Identity user
                 var employee = new Employee
@@ -219,7 +221,7 @@ namespace WebAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating employee: {Email}", dto.Email);
-                return StatusCode(500, new { Message = "An error occurred while creating the employee" });
+                return StatusCode(500, new { Message = "An error occurred while creating the employee", ex});
             }
         }
 

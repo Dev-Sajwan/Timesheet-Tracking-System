@@ -361,6 +361,35 @@ namespace Infrastructure.Migrations
                     b.ToTable("LeaveRecords");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Permission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ApiId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsSensitive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApiId");
+
+                    b.ToTable("Permissions");
+                });
+
             modelBuilder.Entity("Domain.Entities.PermissionSet", b =>
                 {
                     b.Property<int>("Id")
@@ -407,6 +436,21 @@ namespace Infrastructure.Migrations
                     b.HasIndex("ApiId");
 
                     b.ToTable("PermissionSetApis");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PermissionSetPermission", b =>
+                {
+                    b.Property<int>("PermissionSetId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PermissionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PermissionSetId", "PermissionId");
+
+                    b.HasIndex("PermissionId");
+
+                    b.ToTable("PermissionSetPermissions");
                 });
 
             modelBuilder.Entity("Domain.Entities.Profile", b =>
@@ -492,6 +536,28 @@ namespace Infrastructure.Migrations
                     b.HasIndex("TimesheetId");
 
                     b.ToTable("TimesheetEntry");
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserPermission", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("PermissionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AssignedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId", "PermissionId");
+
+                    b.HasIndex("PermissionId");
+
+                    b.ToTable("UserPermissions");
                 });
 
             modelBuilder.Entity("Domain.Entities.UserPermissionSet", b =>
@@ -774,6 +840,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Employee");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Permission", b =>
+                {
+                    b.HasOne("Domain.Entities.Api", "Api")
+                        .WithMany("Permissions")
+                        .HasForeignKey("ApiId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Api");
+                });
+
             modelBuilder.Entity("Domain.Entities.PermissionSetApi", b =>
                 {
                     b.HasOne("Domain.Entities.Api", "Api")
@@ -789,6 +866,25 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Api");
+
+                    b.Navigation("PermissionSet");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PermissionSetPermission", b =>
+                {
+                    b.HasOne("Domain.Entities.Permission", "Permission")
+                        .WithMany("PermissionSetPermissions")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.PermissionSet", "PermissionSet")
+                        .WithMany("PermissionSetPermissions")
+                        .HasForeignKey("PermissionSetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
 
                     b.Navigation("PermissionSet");
                 });
@@ -820,6 +916,25 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Timesheet");
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserPermission", b =>
+                {
+                    b.HasOne("Domain.Entities.Permission", "Permission")
+                        .WithMany("UserPermissions")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.ApplicationUser", "User")
+                        .WithMany("UserPermissions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Entities.UserPermissionSet", b =>
@@ -914,11 +1029,15 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Api", b =>
                 {
                     b.Navigation("ApiPermissionSets");
+
+                    b.Navigation("Permissions");
                 });
 
             modelBuilder.Entity("Domain.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("UserPermissionSets");
+
+                    b.Navigation("UserPermissions");
                 });
 
             modelBuilder.Entity("Domain.Entities.BusinessUnit", b =>
@@ -942,9 +1061,18 @@ namespace Infrastructure.Migrations
                     b.Navigation("Timesheets");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Permission", b =>
+                {
+                    b.Navigation("PermissionSetPermissions");
+
+                    b.Navigation("UserPermissions");
+                });
+
             modelBuilder.Entity("Domain.Entities.PermissionSet", b =>
                 {
                     b.Navigation("PermissionSetApis");
+
+                    b.Navigation("PermissionSetPermissions");
 
                     b.Navigation("UserPermissionSets");
                 });

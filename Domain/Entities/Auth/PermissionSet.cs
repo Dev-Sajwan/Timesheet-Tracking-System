@@ -11,6 +11,7 @@ namespace Domain.Entities
         public DateTime UpdatedAt { get; set; }
 
         public ICollection<PermissionSetApi> PermissionSetApis { get; set; } = new List<PermissionSetApi>();
+        public ICollection<PermissionSetPermission> PermissionSetPermissions { get; set; } = new List<PermissionSetPermission>();
         public ICollection<UserPermissionSet> UserPermissionSets { get; set; } = new List<UserPermissionSet>();
     }
 }
