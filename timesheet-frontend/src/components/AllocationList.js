@@ -47,6 +47,7 @@ export default function AllocationList() {
   // Search
   const [searchTerm, setSearchTerm] = useState("");
   const [formError, setFormError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // Load permissions from localStorage
   // useEffect(() => {
@@ -61,11 +62,18 @@ export default function AllocationList() {
   }, [projects, selectedBusinessUnit]);
 
   useEffect(() => {
-    loadAllocations();
-    loadEmployees();
-    loadProjects();
-    loadClients();
-    loadBusinessUnits();
+    const loadAll = async () => {
+      setLoading(true);
+      await Promise.all([
+        loadAllocations(),
+        loadEmployees(),
+        loadProjects(),
+        loadClients(),
+        loadBusinessUnits()
+      ]);
+      setLoading(false);
+    };
+    loadAll();
   }, []);
 
   const loadClients = async () => {
@@ -449,66 +457,76 @@ export default function AllocationList() {
             </thead>
 
             <tbody>
-              {filteredAllocations.map((alloc) => {
-                const emp = getEmployee(alloc.employeeId);
-                const proj = getProject(alloc.projectId);
-                const clientName = getClientName(proj);
+              {loading ? (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: "center", padding: designSystem.spacing.xl }}>
+                    <div style={{ display: "inline-block", width: "32px", height: "32px", border: "4px solid rgba(0,0,0,0.1)", borderTopColor: designSystem.colors.primary, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                    <div style={{ marginTop: designSystem.spacing.sm, color: designSystem.colors.textSecondary, ...designSystem.typography.body }}>Loading allocations...</div>
+                  </td>
+                </tr>
+              ) : (
+                filteredAllocations.map((alloc) => {
+                  const emp = getEmployee(alloc.employeeId);
+                  const proj = getProject(alloc.projectId);
+                  const clientName = getClientName(proj);
 
-                return (
-                  <tr
-                    key={alloc.allocationId}
-                    style={{ ...globalStyles.tableRow }}
-                  >
-                    <td style={{ ...globalStyles.tableCell }}>
-                      {emp
-                        ? `${emp.name} (${emp.email})`
-                        : `Employee ${alloc.employeeId}`}
-                    </td>
+                  return (
+                    <tr
+                      key={alloc.allocationId}
+                      style={{ ...globalStyles.tableRow }}
+                    >
+                      <td style={{ ...globalStyles.tableCell }}>
+                        {emp
+                          ? `${emp.name} (${emp.email})`
+                          : `Employee ${alloc.employeeId}`}
+                      </td>
 
-                    <td style={{ ...globalStyles.tableCell }}>
-                      {businessUnits.find(bu => bu.businessUnitId === alloc.businessUnitId)?.name || "—"}
-                    </td>
+                      <td style={{ ...globalStyles.tableCell }}>
+                        {businessUnits.find(bu => bu.businessUnitId === alloc.businessUnitId)?.name || "—"}
+                      </td>
 
-                    <td style={{ ...globalStyles.tableCell }}>
-                      {proj
-                        ? proj.projectName
-                        : `Project ${alloc.projectId}`}
-                    </td>
+                      <td style={{ ...globalStyles.tableCell }}>
+                        {proj
+                          ? proj.projectName
+                          : `Project ${alloc.projectId}`}
+                      </td>
 
-                    <td style={{ ...globalStyles.tableCell }}>
-                      {clientName ||
-                        proj?.clientId ||
-                        "—"}
-                    </td>
+                      <td style={{ ...globalStyles.tableCell }}>
+                        {clientName ||
+                          proj?.clientId ||
+                          "—"}
+                      </td>
 
-                    <td style={{ ...globalStyles.tableCell }}>
-                      {alloc.allocationPercent}%
-                    </td>
+                      <td style={{ ...globalStyles.tableCell }}>
+                        {alloc.allocationPercent}%
+                      </td>
 
-                    <td style={{ ...globalStyles.tableCell }}>
-                      {formatDate(alloc.startDate)}
-                    </td>
+                      <td style={{ ...globalStyles.tableCell }}>
+                        {formatDate(alloc.startDate)}
+                      </td>
 
-                    <td style={{ ...globalStyles.tableCell }}>
-                      {formatDate(alloc.endDate)}
-                    </td>
+                      <td style={{ ...globalStyles.tableCell }}>
+                        {formatDate(alloc.endDate)}
+                      </td>
 
-                    <td style={{ ...globalStyles.tableCell }}>
-                      <Button
-                        variant="danger"
-                        size="small"
-                        onClick={() =>
-                          handleDelete(
-                            alloc.allocationId
-                          )
-                        }
-                      >
-                        Remove
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td style={{ ...globalStyles.tableCell }}>
+                        <Button
+                          variant="danger"
+                          size="small"
+                          onClick={() =>
+                            handleDelete(
+                              alloc.allocationId
+                            )
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

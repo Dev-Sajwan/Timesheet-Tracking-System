@@ -8,11 +8,14 @@ import HolidayList from "./HolidayList";
 import TimesheetApproval from "./TimesheetApproval";
 import PermissionManager from "./PermissionManager";
 import ErrorModal from "./ErrorModal";
+import useInactivityTimeout from "../hooks/useInactivityTimeout";
 import { useNavigate } from "react-router-dom";
 import { designSystem } from "../styles/designSystem";
 import { jwtDecode } from "jwt-decode";
 
 const UnifiedDashboard = () => {
+  useInactivityTimeout(30);
+
   const [activeTab, setActiveTab] = useState("timesheets");
   const [timesheetMode, setTimesheetMode] = useState("weekly"); // 'weekly' or 'daily'
   const navigate = useNavigate();
