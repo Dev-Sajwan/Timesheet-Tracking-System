@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { getAllTimesheets, approveTimesheet, rejectTimesheet } from "../Services/Api";
 import { designSystem, globalStyles } from "../styles/designSystem";
 import Button from "./Button";
+import { jwtDecode } from "jwt-decode";
 
 export default function TimesheetApproval({ userRole }) {
   const [timesheets, setTimesheets] = useState([]);
@@ -9,8 +10,34 @@ export default function TimesheetApproval({ userRole }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedTimesheet, setSelectedTimesheet] = useState(null);
+
+  // Current logged in user info
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [permissions, setPermissions] = useState([]);
+
+  useEffect(() => {
+    const perms = JSON.parse(localStorage.getItem("permissions") || "[]");
+    setPermissions(perms);
+
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setCurrentUserId(decoded.uid || decoded.sub || decoded.nameidentifier || "");
+        const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];
+        const rolesArray = Array.isArray(userRoles) ? userRoles : [userRoles];
+        const isSystemAdmin = decoded["IsSystemAdmin"] === "true" || decoded["isSystemAdmin"] === true || rolesArray.includes("Admin") || rolesArray.includes("L1");
+        setIsAdmin(isSystemAdmin);
+      } catch (e) {
+        console.error("Error decoding token", e);
+      }
+    }
+  }, []);
 
   const loadTimesheets = useCallback(async () => {
     setLoading(true);
@@ -30,6 +57,43 @@ export default function TimesheetApproval({ userRole }) {
     loadTimesheets();
   }, [loadTimesheets]);
 
+  // Check if current user can approve/reject a specific timesheet
+  const canManageTimesheet = (ts) => {
+    if (!ts) return false;
+    
+    // If already approved or rejected, disable editing/actions
+    const status = (ts.approvalStatus || "").toLowerCase();
+    if (status === "approved" || status === "rejected") {
+      return false;
+    }
+
+    // Admin / L1 can approve any
+    if (isAdmin || userRole === "L1") return true;
+
+    // Cannot approve own timesheet unless admin
+    const employeeUserId = ts.employee?.id || ts.employeeId || ts.userId;
+    const currentEmpId = localStorage.getItem("employeeId");
+    if (currentEmpId && employeeUserId && String(currentEmpId) === String(employeeUserId)) {
+      return false;
+    }
+    if (currentUserId && (ts.employee?.userId === currentUserId || ts.userId === currentUserId)) {
+      return false;
+    }
+
+    // Role hierarchy check for submitter's role vs approver's role
+    // L4 timesheet can be approved by L1-L3
+    // L3 timesheet can be approved by L1-L2
+    const submitterRole = ts.employee?.role || ts.role || "L4";
+    if (userRole === "L2") {
+      return submitterRole === "L3" || submitterRole === "L4";
+    }
+    if (userRole === "L3") {
+      return submitterRole === "L4";
+    }
+
+    return false;
+  };
+
   const handleApprove = async (timesheetId) => {
     if (!window.confirm("Approve this timesheet?")) return;
     const comment = window.prompt("Optional comment (leave blank to skip):") ?? "";
@@ -42,9 +106,10 @@ export default function TimesheetApproval({ userRole }) {
       await approveTimesheet(timesheetId, fullName, comment.trim());
       setSuccess("Timesheet approved successfully!");
       loadTimesheets();
+      closeViewModal();
     } catch (e) {
       console.error(e);
-      setError("Failed to approve: " + (e.response?.data?.message || e.message));
+      setError("Failed to approve: " + (e.response?.data?.message || e.customMessage || e.message));
     } finally {
       setLoading(false);
     }
@@ -62,9 +127,10 @@ export default function TimesheetApproval({ userRole }) {
       await rejectTimesheet(timesheetId, fullName, reason.trim());
       setSuccess("Timesheet rejected!");
       loadTimesheets();
+      closeViewModal();
     } catch (e) {
       console.error(e);
-      setError("Failed to reject: " + (e.response?.data?.message || e.message));
+      setError("Failed to reject: " + (e.response?.data?.message || e.customMessage || e.message));
     } finally {
       setLoading(false);
     }
@@ -81,18 +147,32 @@ export default function TimesheetApproval({ userRole }) {
   };
 
   const filteredTimesheets = timesheets.filter(ts => {
-    if (filterStatus === "All") return true;
-    return ts.approvalStatus === filterStatus;
-  });
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "—";
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return dateString;
+    // Status filter
+    if (filterStatus !== "All" && ts.approvalStatus !== filterStatus) {
+      return false;
     }
-  };
+
+    // Search term (employee name or project name)
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      const empName = (ts.employee?.name || `Employee ${ts.employeeId}`).toLowerCase();
+      const projName = (ts.project?.projectName || `Project ${ts.projectId}`).toLowerCase();
+      if (!empName.includes(term) && !projName.includes(term)) {
+        return false;
+      }
+    }
+
+    // Date filter (Week column)
+    if (dateFilter) {
+      if (!ts.weekStartDate) return false;
+      const tsDateStr = new Date(ts.weekStartDate).toLocaleDateString("en-CA");
+      if (tsDateStr !== dateFilter) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   const getTotalHours = (entries) => {
     return (entries || []).reduce((sum, e) => sum + (e.hours || 0), 0).toFixed(1);
@@ -107,19 +187,40 @@ export default function TimesheetApproval({ userRole }) {
 
   return (
     <div style={{ padding: designSystem.spacing.lg, maxWidth: "1400px", margin: "0 auto", fontFamily: "Roboto, Arial, sans-serif" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md, flexWrap: "wrap", gap: designSystem.spacing.md }}>
         <h2 style={{ margin: 0, ...designSystem.typography.h2 }}>Timesheet Approval</h2>
-        <div style={{ display: "flex", gap: designSystem.spacing.sm }}>
-          {["All", "Pending", "Approved", "Rejected"].map(status => (
-            <Button
-              key={status}
-              variant={filterStatus === status ? "primary" : "secondary"}
-              size="small"
-              onClick={() => setFilterStatus(status)}
-            >
-              {status}
-            </Button>
-          ))}
+        
+        {/* Filters */}
+        <div style={{ display: "flex", gap: designSystem.spacing.sm, alignItems: "center", flexWrap: "wrap" }}>
+          <input
+            type="text"
+            placeholder="Search employee or project..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ ...globalStyles.input, width: "220px", padding: "6px 12px" }}
+          />
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            style={{ ...globalStyles.input, width: "160px", padding: "6px 12px" }}
+          />
+          {dateFilter && (
+            <Button variant="secondary" size="small" onClick={() => setDateFilter("")}>Clear Date</Button>
+          )}
+
+          <div style={{ display: "flex", gap: designSystem.spacing.xs, marginLeft: designSystem.spacing.sm }}>
+            {["All", "Pending", "Approved", "Rejected"].map(status => (
+              <Button
+                key={status}
+                variant={filterStatus === status ? "primary" : "secondary"}
+                size="small"
+                onClick={() => setFilterStatus(status)}
+              >
+                {status}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -162,13 +263,7 @@ export default function TimesheetApproval({ userRole }) {
                     const proj = ts.project ? ts.project : { projectName: `Project ${ts.projectId}` };
                     const emp = ts.employee ? ts.employee : { name: `Employee ${ts.employeeId}` };
                     const timesheetId = ts.timesheetId || ts.id;
-                    
-                    const descriptions = (ts.entries || [])
-                      .map(e => e.description)
-                      .filter(d => d && d.trim())
-                      .join("; ") || "—";
-                    
-                    const totalHours = getTotalHours(ts.entries);
+                    const canManage = canManageTimesheet(ts);
                     
                     return (
                       <tr key={timesheetId} style={{ ...globalStyles.tableRowEven }}>
@@ -217,14 +312,38 @@ export default function TimesheetApproval({ userRole }) {
                           </div>
                         </td>
                         <td style={{ ...globalStyles.tableCell, textAlign: "center" }}>
-                          <Button 
-                            variant="primary" 
-                            size="small" 
-                            onClick={() => openViewModal(ts)}
-                            disabled={loading}
-                          >
-                            View
-                          </Button>
+                          <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
+                            <Button 
+                              variant="primary" 
+                              size="small" 
+                              onClick={() => openViewModal(ts)}
+                              disabled={loading}
+                            >
+                              View
+                            </Button>
+                            {canManage && (
+                              <>
+                                <Button 
+                                  variant="success" 
+                                  size="small" 
+                                  onClick={() => handleApprove(timesheetId)}
+                                  disabled={loading}
+                                  style={{ background: "#2E7D32", color: "white" }}
+                                >
+                                  Approve
+                                </Button>
+                                <Button 
+                                  variant="danger" 
+                                  size="small" 
+                                  onClick={() => handleReject(timesheetId)}
+                                  disabled={loading}
+                                  style={{ background: "#C62828", color: "white" }}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -341,7 +460,7 @@ export default function TimesheetApproval({ userRole }) {
             </div>
 
             {selectedTimesheet.approvals && selectedTimesheet.approvals.length > 0 && (
-              <div>
+              <div style={{ marginBottom: designSystem.spacing.md }}>
                 <label style={{ fontSize: "12px", color: designSystem.colors.textSecondary, display: "block", marginBottom: "4px" }}>Approval History</label>
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ ...globalStyles.table, width: "100%", fontSize: "13px" }}>
@@ -349,7 +468,7 @@ export default function TimesheetApproval({ userRole }) {
                       <tr style={{ ...globalStyles.tableHeader }}>
                         <th style={globalStyles.tableheadercell}>Approved By</th>
                         <th style={globalStyles.tableheadercell}>Date</th>
-                        <th style={globalStyles.tableheadercell}>Type</th>
+                        <th style={globalStyles.testHeadercell || globalStyles.tableheadercell}>Type</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -363,6 +482,30 @@ export default function TimesheetApproval({ userRole }) {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            {canManageTimesheet(selectedTimesheet) && (
+              <div style={{ display: "flex", gap: designSystem.spacing.sm, justifyContent: "flex-end", marginTop: designSystem.spacing.lg, borderTop: `1px solid ${designSystem.colors.divider}`, paddingTop: designSystem.spacing.md }}>
+                <Button 
+                  variant="success" 
+                  size="small" 
+                  onClick={() => handleApprove(selectedTimesheet.timesheetId || selectedTimesheet.id)}
+                  disabled={loading}
+                  style={{ background: "#2E7D32", color: "white" }}
+                >
+                  Approve
+                </Button>
+                <Button 
+                  variant="danger" 
+                  size="small" 
+                  onClick={() => handleReject(selectedTimesheet.timesheetId || selectedTimesheet.id)}
+                  disabled={loading}
+                  style={{ background: "#C62828", color: "white" }}
+                >
+                  Reject
+                </Button>
               </div>
             )}
           </div>

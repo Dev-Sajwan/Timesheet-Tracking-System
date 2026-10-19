@@ -247,15 +247,25 @@ namespace WebAPI.Controllers
             // Get permissions from user's assigned permission sets and direct permissions
             var perms = await _permissionService.GetUserPermissionsAsync(userId);
             
+            // Also return all linked APIs for these permissions so frontend can easily check API-level access
+            var allPermissionsWithApis = await _permissionService.GetAllPermissionsAsync();
+            var userPermissionObjects = allPermissionsWithApis
+                .Where(p => perms.Contains(p.Name) || User.FindFirst("isSystemAdmin")?.Value?.ToLower() == "true" || roles.Contains("Admin") || roles.Contains("L1"))
+                .SelectMany(p => p.PermissionApis.Select(pa => pa.Api.Route.ToLower()))
+                .Distinct()
+                .ToList();
+
             // If user has Admin role, L1 role, or System Admin profile, they get all permissions
             var isSystemAdmin = User.FindFirst("isSystemAdmin")?.Value?.ToLower() == "true";
             if (roles.Contains("Admin") || roles.Contains("L1") || isSystemAdmin) {
-                var allPermissions = await _permissionService.GetAllPermissionsAsync();
-                var allNames = allPermissions.Select(x => x.Name).ToList();
+                var allNames = allPermissionsWithApis.Select(x => x.Name).ToList();
                 perms = perms.Union(allNames).Distinct().ToList();
             }
 
-            return Ok(perms);
+            return Ok(new {
+                permissions = perms,
+                apis = userPermissionObjects
+            });
         }
     }
 }

@@ -11,6 +11,7 @@ import React, { useEffect, useState, useMemo } from "react";
   } from "../Services/Api";
   import { designSystem, globalStyles } from "../styles/designSystem";
   import Button from "./Button";
+  import ErrorModal from "./ErrorModal";
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -45,6 +46,7 @@ export default function AllocationList() {
 
   // Search
   const [searchTerm, setSearchTerm] = useState("");
+  const [formError, setFormError] = useState("");
 
   // Load permissions from localStorage
   // useEffect(() => {
@@ -126,6 +128,7 @@ export default function AllocationList() {
     }
 
     try {
+      setFormError("");
       for (const empId of selectedEmployees) {
         const allocationData = {
           employeeId: empId,
@@ -153,6 +156,9 @@ export default function AllocationList() {
       await loadAllocations();
     } catch (error) {
       console.error("Error adding allocation:", error);
+      const msg = error.customMessage || error.response?.data?.message || "Failed to add allocation.";
+      setFormError(msg);
+      window.alert(msg);
     }
   };
 
@@ -184,10 +190,14 @@ export default function AllocationList() {
 
   const handleDelete = async (id) => {
     try {
+      setFormError("");
       await deleteAllocation(id);
       await loadAllocations();
     } catch (error) {
       console.error("Error deleting allocation:", error);
+      const msg = error.customMessage || error.response?.data?.message || "Failed to delete allocation.";
+      setFormError(msg);
+      window.alert(msg);
     }
   };
 
@@ -294,6 +304,7 @@ export default function AllocationList() {
         fontFamily: "Segoe UI Variable, Segoe UI, sans-serif"
       }}
     >
+      <ErrorModal message={formError} onClose={() => setFormError("")} />
       {/* =========================================================
           PAGE HEADER
       ========================================================= */}

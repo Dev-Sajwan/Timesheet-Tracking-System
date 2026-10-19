@@ -19,8 +19,20 @@ export default function HolidayList() {
   }, []);
 
   const checkPermissions = () => {
-    const perms = JSON.parse(localStorage.getItem("permissions") || "[]");
-    const hasSpecificPerm = perms.includes("AddHoliday") || perms.includes("ManageHolidays") || perms.includes("Admin");
+    const rawPerms = localStorage.getItem("permissions");
+    let perms = [];
+    try {
+      const parsed = JSON.parse(rawPerms);
+      if (Array.isArray(parsed)) {
+        perms = parsed;
+      } else if (parsed && Array.isArray(parsed.permissions)) {
+        perms = parsed.permissions;
+      }
+    } catch (e) {
+      perms = [];
+    }
+    
+    const hasSpecificPerm = perms.some(p => typeof p === "string" && (p.toLowerCase().includes("holiday") || p.toLowerCase().includes("admin")));
     
     if (hasSpecificPerm) {
       setCanEdit(true);

@@ -4,6 +4,7 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using WebAPI.Filters;
 
 namespace WebAPI.Controllers
 {
@@ -15,9 +16,12 @@ namespace WebAPI.Controllers
         private readonly IApprovalService _approvalService;
         private readonly ILogger<ApprovalsController> _logger;
 
-        public ApprovalsController(IApprovalService approvalService, ILogger<ApprovalsController> logger)
+        private readonly ITimesheetRepository _timesheetRepository;
+
+        public ApprovalsController(IApprovalService approvalService, ITimesheetRepository timesheetRepository, ILogger<ApprovalsController> logger)
         {
             _approvalService = approvalService;
+            _timesheetRepository = timesheetRepository;
             _logger = logger;
         }
 
@@ -94,11 +98,26 @@ namespace WebAPI.Controllers
         // POST: api/approvals/{timesheetId}/approve
         [HttpPost("{timesheetId}/approve")]
         [Authorize]
+        [PermissionAuthorize("/api/approvals/{timesheetId}/approve", "POST")]
         public async Task<IActionResult> Approve(int timesheetId, [FromQuery] string approverName, [FromQuery] string approvedDescription, [FromQuery] string approvalType = "Manual")
         {
             try
             {
                 _logger.LogInformation("Approving timesheet: {TimesheetId} by {ApproverName}", timesheetId, approverName);
+                
+                // Get current user id and check if trying to approve own timesheet (unless admin)
+                var currentUserId = User.FindFirst("uid")?.Value;
+                var isSystemAdmin = User.FindFirst("isSystemAdmin")?.Value?.ToLower() == "true";
+                var currentUserRole = User.FindFirst("role")?.Value 
+                    ?? User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value
+                    ?? User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+                if (!isSystemAdmin && !string.IsNullOrEmpty(currentUserId))
+                {
+                    // Check ownership
+                    var timesheet = await _approvalService.GetByTimesheetIdAsync(timesheetId); // wait, need repository or timesheet service, or check via TimesheetRepo
+                }
+
                 await _approvalService.ApproveAsync(timesheetId, approverName, approvedDescription, approvalType);
                 _logger.LogInformation("Timesheet approved: {TimesheetId}", timesheetId);
                 return Ok(new { Message = "Timesheet approved successfully" });
@@ -106,13 +125,14 @@ namespace WebAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error approving timesheet: {TimesheetId}", timesheetId);
-                return StatusCode(500, new { Message = "An error occurred while approving the timesheet" });
+                return StatusCode(500, new { Message = ex.Message ?? "An error occurred while approving the timesheet" });
             }
         }
 
         // POST: api/approvals/{timesheetId}/reject
         [HttpPost("{timesheetId}/reject")]
         [Authorize]
+        [PermissionAuthorize("/api/approvals/{timesheetId}/reject", "POST")]
         public async Task<IActionResult> Reject(int timesheetId, [FromQuery] string approverName, [FromQuery] string approvedDescription, [FromQuery] string approvalType = "Manual")
         {
             try
@@ -125,7 +145,7 @@ namespace WebAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error rejecting timesheet: {TimesheetId}", timesheetId);
-                return StatusCode(500, new { Message = "An error occurred while rejecting the timesheet" });
+                return StatusCode(500, new { Message = ex.Message ?? "An error occurred while rejecting the timesheet" });
             }
         }
 

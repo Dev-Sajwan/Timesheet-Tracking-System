@@ -5,6 +5,7 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using WebAPI.Filters;
 
 namespace WebAPI.Controllers
 {
@@ -29,6 +30,7 @@ namespace WebAPI.Controllers
 
         // GET: api/allocations
         [HttpGet]
+        [PermissionAuthorize("/api/allocations", "GET")]
         public async Task<ActionResult<IEnumerable<AllocationDto>>> GetAll()
         {
             try
@@ -75,6 +77,7 @@ namespace WebAPI.Controllers
 
         // GET: api/allocations/{id}
         [HttpGet("{id}")]
+        [PermissionAuthorize("/api/allocations/{id}", "GET")]
         public async Task<ActionResult<AllocationDto>> GetById(int id)
         {
             try
@@ -99,6 +102,7 @@ namespace WebAPI.Controllers
 
         // POST: api/allocations
         [HttpPost]
+        [PermissionAuthorize("/api/allocations", "POST")]
         public async Task<IActionResult> Add([FromBody] AllocationDto dto)
         {
             try
@@ -118,6 +122,7 @@ namespace WebAPI.Controllers
 
         // DELETE: api/allocations/{id}
         [HttpDelete("{id}")]
+        [PermissionAuthorize("/api/allocations/{id}", "DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             try

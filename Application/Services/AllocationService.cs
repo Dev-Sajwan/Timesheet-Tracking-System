@@ -24,33 +24,29 @@ namespace Application.Services
         
         public async Task<IEnumerable<Allocation>> GetAllAsync(string currentUserRole)
         {
-            // Admin bypass - if empty or null role, return all (admin case)
-            if (string.IsNullOrEmpty(currentUserRole))
+            // Admin or L1 bypass - return all allocations
+            if (string.IsNullOrEmpty(currentUserRole) || currentUserRole == "L1" || currentUserRole == "L2")
                 return await _repository.GetAllAsync();
 
             var allAllocations = await _repository.GetAllAsync();
-
-            var employee = await _employeeRepository.GetByIdAsync(allAllocations.FirstOrDefault()?.EmployeeId ?? "");
-
-            // Role hierarchy: L1 > L2 > L3 > L4
-            var allowedRoles = GetAllowedRoles(currentUserRole);
-            
             var filteredAllocations = new List<Allocation>();
+            
             foreach (var alloc in allAllocations)
             {
-                var user = await _userManager.FindByIdAsync(employee.UserId);
-                if (user != null)
+                var employee = await _employeeRepository.GetByIdAsync(alloc.EmployeeId ?? "");
+                if (employee != null && !string.IsNullOrEmpty(employee.UserId))
                 {
-                    var roles = await _userManager.GetRolesAsync(user);
-                    var userRole = roles.FirstOrDefault(r => r.StartsWith("L"));
-                    if (userRole != null && allowedRoles.Contains(userRole))
+                    var user = await _userManager.FindByIdAsync(employee.UserId);
+                    if (user != null)
                     {
-                        filteredAllocations.Add(alloc);
+                        var roles = await _userManager.GetRolesAsync(user);
+                        var userRole = roles.FirstOrDefault(r => r.StartsWith("L"));
+                        var allowedRoles = GetAllowedRoles(currentUserRole);
+                        if (userRole != null && allowedRoles.Contains(userRole))
+                        {
+                            filteredAllocations.Add(alloc);
+                        }
                     }
-                }
-                else if (string.IsNullOrEmpty(currentUserRole))
-                {
-                    filteredAllocations.Add(alloc);
                 }
             }
             

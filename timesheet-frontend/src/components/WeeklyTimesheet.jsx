@@ -179,23 +179,35 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
 
       <div style={{ display: "flex", gap: designSystem.spacing.md, flexWrap: "wrap", alignItems: "flex-end", marginBottom: designSystem.spacing.lg }}>
           <div style={{ flex: 1, minWidth: "200px" }}>
-            <label style={{ display: "block", marginBottom: designSystem.spacing.xs, ...designSystem.typography.bodyMedium }}>Project</label>
-            <select
-              value={selectedProjectId}
-              onChange={e => handleProjectChange(e.target.value)}
-              style={{ ...globalStyles.input }}
-            >
-              <option value="">Select Project</option>
-              {allocations.map(a => {
-                const proj = projects.find(p => p.projectId === a.projectId);
-                return proj ? (
-                  <option key={proj.projectId} value={proj.projectId}>
-                    {proj.projectName}
-                  </option>
-                ) : null;
-              })}
-            </select>
-          </div>
+          <label
+            style={{
+              display: "block",
+              marginBottom: designSystem.spacing.xs,
+              ...designSystem.typography.bodyMedium
+            }}
+          >
+            Project
+          </label>
+
+          <select
+            value={selectedProjectId}
+            onChange={e => handleProjectChange(e.target.value)}
+            style={{ ...globalStyles.input }}
+          >
+            <option value="">Select Project</option>
+
+        {[...new Map(
+          allocations
+            .map(a => projects.find(p => p.projectId === a.projectId))
+            .filter(Boolean)
+            .map(p => [p.projectId, p])
+        ).values()].map(proj => (
+          <option key={proj.projectId} value={proj.projectId}>
+            {proj.projectName}
+          </option>
+        ))}
+      </select>
+    </div>
 
           <div style={{ flex: 1, minWidth: "180px" }}>
             <label style={{ display: "block", marginBottom: designSystem.spacing.xs, ...designSystem.typography.bodyMedium }}>Week Starting (Monday)</label>
@@ -244,7 +256,7 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
                   const weekend = isWeekend(idx);
                   const entry = dailyEntries[idx] || {};
                   return (
-                    <td key={idx} style={{ ...globalStyles.tableCell, textAlign: "center", background: weekend ? "#f5f5f5" : "white" }}>
+                    <td key={idx} style={{ ...globalStyles.tableCell, textAlign: "center", background: weekend ? "#fc5d5d" : "white" }}>
                       {weekend ? (
                         <span style={{ color: designSystem.colors.textSecondary, fontSize: "12px" }}>—</span>
                       ) : (
@@ -256,7 +268,7 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
                             step="0.5"
                             value={entry.hours || ""}
                             onChange={e => handleDayChange(idx, "hours", e.target.value ? Number(e.target.value) : 0)}
-                            style={{ width: "60px", padding: "4px 8px", textAlign: "center", border: "1px solid #ddd", borderRadius: "4px" }}
+                            style={{ width: "100%", padding: "4px 8px", textAlign: "center", border: "1px solid #ddd", borderRadius: "4px" }}
                           />
                           <br/>
                           <input
@@ -307,8 +319,9 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
                     <th style={globalStyles.tableheadercell}>Project</th>
                     <th style={globalStyles.tableheadercell}>Week Start</th>
                     <th style={globalStyles.tableheadercell}>Total Hours</th>
-                    <th style={globalStyles.tableheadercell}>Status</th>
                     <th style={globalStyles.tableheadercell}>Submitted Date</th>
+                    <th style={globalStyles.tableheadercell}>Description</th>
+                    <th style={globalStyles.tableheadercell}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -319,6 +332,8 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
                         <td style={{ ...globalStyles.tableCell }}>{proj?.projectName || `Project ${ts.projectId}`}</td>
                         <td style={{ ...globalStyles.tableCell }}>{ts.weekStartDate ? new Date(ts.weekStartDate).toLocaleDateString("en-GB") : "—"}</td>
                         <td style={{ ...globalStyles.tableCell }}>{(ts.entries || []).reduce((sum, e) => sum + (e.hours || 0), 0).toFixed(1)} hrs</td>
+                        <td style={{ ...globalStyles.tableCell }}>{ts.date ? new Date(ts.date).toLocaleDateString() : "—"}</td>
+                        <td style={{ ...globalStyles.tableCell }}>{ts.entries?.[0]?.description || "No description provided"}</td>
                         <td style={{ ...globalStyles.tableCell }}>
                           <span style={{ 
                             padding: "2px 8px", 
@@ -332,7 +347,7 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
                             {ts.approvalStatus || "Pending"}
                           </span>
                         </td>
-                        <td style={{ ...globalStyles.tableCell }}>{ts.date ? new Date(ts.date).toLocaleDateString() : "—"}</td>
+                        
                       </tr>
                     );
                   })}

@@ -7,6 +7,7 @@ import WeeklyTimesheet from "./WeeklyTimesheet";
 import HolidayList from "./HolidayList";
 import TimesheetApproval from "./TimesheetApproval";
 import PermissionManager from "./PermissionManager";
+import ErrorModal from "./ErrorModal";
 import { useNavigate } from "react-router-dom";
 import { designSystem } from "../styles/designSystem";
 import { jwtDecode } from "jwt-decode";
@@ -20,6 +21,7 @@ const UnifiedDashboard = () => {
   const [permissions, setPermissions] = useState([]);
   const [userRole, setUserRole] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [globalError, setGlobalError] = useState("");
 
   useEffect(() => {
     const perms = JSON.parse(localStorage.getItem("permissions") || "[]");
@@ -47,6 +49,13 @@ const UnifiedDashboard = () => {
     
     // Set default active tab
     setActiveTab("timesheets");
+
+    // Global error event listener for API failures / permission denial
+    const handleApiError = (event) => {
+      setGlobalError(event.detail?.message || "An unexpected error occurred.");
+    };
+    window.addEventListener("api-error", handleApiError);
+    return () => window.removeEventListener("api-error", handleApiError);
   }, []);
 
   const handleLogout = () => {
@@ -57,13 +66,19 @@ const UnifiedDashboard = () => {
     navigate("/");
   };
 
-  const hasPerm = (p) => permissions.includes(p);
+  // Check if user can see approval tab based on permission name or linked API routes
+  const canApprove =
+    isAdmin ||
+     ["L1", "L2", "L3"].includes(userRole);
 
-  // Check if user can see approval tab (L1, L2, L3)
-  const canApprove = ["L1", "L2", "L3"].includes(userRole);
+  console.log("Is Admin:", isAdmin);
+  console.log("Can Approve:", canApprove);
+
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "Roboto, sans-serif" }}>
+      <ErrorModal message={globalError} onClose={() => setGlobalError("")} />
+
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", background: designSystem.colors.primary, color: "white", padding: "10px 20px" }}>
         <h2>Dashboard</h2>
@@ -74,7 +89,7 @@ const UnifiedDashboard = () => {
       </div>
       
       <div style={{ display: "flex", flex: 1 }}>
-        {/* Sidebar - All tabs visible to everyone */}
+        {/* Sidebar */}
         <div style={{ width: "220px", background: designSystem.colors.primaryDark, color: "#ecf0f1", padding: "20px" }}>
           <ul style={{ listStyle: "none", padding: 0 }}>
             <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "timesheets" ? "bold" : "normal" }} onClick={() => setActiveTab("timesheets")}>

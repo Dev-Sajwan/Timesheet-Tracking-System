@@ -4,7 +4,7 @@ const API = axios.create({
   baseURL: "http://localhost:5162/api", // backend base URL
 });
 
-// Interceptor to add authorization token to requests
+// Interceptor to add authorization token to requests and handle 403 Forbidden
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -12,6 +12,31 @@ API.interceptors.request.use((config) => {
   }
   return config;
 });
+
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    let message = "An error occurred while processing your request";
+    if (error.response && error.response.status === 403) {
+      message = "You do not have permission to perform this operation.";
+    } else if (error.response && error.response.data) {
+      if (typeof error.response.data === "string") {
+        message = error.response.data;
+      } else if (error.response.data.message) {
+        message = error.response.data.message;
+      } else if (error.response.data.Message) {
+        message = error.response.data.Message;
+      } else if (error.response.data.title) {
+        message = error.response.data.title;
+      }
+    } else if (error.message) {
+      message = error.message;
+    }
+    
+    error.customMessage = message;
+    return Promise.reject(error);
+  }
+);
 
 // Auth
 export const login = (data) => API.post("/auth/login", data);

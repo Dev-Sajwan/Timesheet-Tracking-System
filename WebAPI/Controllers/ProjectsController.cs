@@ -6,6 +6,7 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using WebAPI.Filters;
 
 namespace WebAPI.Controllers
 {
@@ -36,6 +37,7 @@ namespace WebAPI.Controllers
 
         // GET: api/projects/{id}
         [HttpGet("{id}")]
+        [PermissionAuthorize("/api/projects/{id}", "GET")]
         public async Task<ActionResult<ProjectDto>> GetById(int id)
         {
             try
@@ -59,6 +61,7 @@ namespace WebAPI.Controllers
 
         // GET: api/projects
         [HttpGet]
+        [PermissionAuthorize("/api/projects", "GET")]
         public async Task<ActionResult<IEnumerable<ProjectDto>>> GetAll()
         {
             try
@@ -87,6 +90,7 @@ namespace WebAPI.Controllers
 
         // POST: api/projects
         [HttpPost]
+        [PermissionAuthorize("/api/projects", "POST")]
         public async Task<IActionResult> Create([FromBody] ProjectDto dto)
         {
             try
@@ -158,6 +162,7 @@ namespace WebAPI.Controllers
 
         // PUT: api/projects/{id}
         [HttpPut("{id}")]
+        [PermissionAuthorize("/api/projects/{id}", "PUT")]
         public async Task<IActionResult> Update(int id, [FromBody] ProjectDto dto)
         {
             try
@@ -179,6 +184,7 @@ namespace WebAPI.Controllers
 
         // DELETE: api/projects/{id}
         [HttpDelete("{id}")]
+        [PermissionAuthorize("/api/projects/{id}", "DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             try

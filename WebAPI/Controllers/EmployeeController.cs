@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using WebAPI.Filters;
 
 namespace WebAPI.Controllers
 {
@@ -40,6 +41,7 @@ namespace WebAPI.Controllers
         // ---------------- CRUD endpoints ----------------
 
         [HttpGet("{id}")]
+        [PermissionAuthorize("/api/employees/{id}", "GET")]
         public async Task<ActionResult<EmployeeDto>> GetById(string id)
         {
             try
@@ -69,6 +71,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet]
+        [PermissionAuthorize("/api/employees", "GET")]
         public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetAll()
         {
             try
@@ -106,6 +109,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost("bulk")]
+        [PermissionAuthorize("/api/employees/bulk", "POST")]
         public async Task<IActionResult> CreateBulk([FromBody] List<EmployeeDto> employeeDtos)
         {
             if (!ModelState.IsValid)
@@ -146,7 +150,10 @@ namespace WebAPI.Controllers
 
             return Ok(createdEmployees);
         }
+
+
         [HttpPost]
+        [PermissionAuthorize("/api/employees", "POST")]
         public async Task<IActionResult> Create([FromBody] EmployeeDto dto)
         {
             try
@@ -226,6 +233,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut("{id}")]
+        [PermissionAuthorize("/api/employees/{id}", "PUT")]
         public async Task<IActionResult> Update(string id, [FromBody] EmployeeDto dto)
         {
             try
@@ -251,11 +259,12 @@ namespace WebAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating employee: {EmployeeId}", id);
-                return StatusCode(500, new { Message = "An error occurred while updating the employee" });
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message }); 
             }
         }
 
         [HttpDelete("{id}")]
+        [PermissionAuthorize("/api/employees/{id}", "DELETE")]
         public async Task<IActionResult> Delete(string id)
         {
             try

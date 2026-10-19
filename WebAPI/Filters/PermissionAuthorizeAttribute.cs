@@ -37,7 +37,10 @@ namespace WebAPI.Filters
                 var hasAccess = await _permissionService.HasAccess(userId, _apiRoute, _httpMethod);
                 if (!hasAccess)
                 {
-                    context.Result = new ForbidResult();
+                    context.Result = new ObjectResult(new { message = "You do not have permission to perform this operation." })
+                    {
+                        StatusCode = StatusCodes.Status403Forbidden
+                    };
                 }
             }
         }

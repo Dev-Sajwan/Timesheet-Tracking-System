@@ -3,6 +3,7 @@ import { getEmployees, addEmployee, updateEmployee, assignEmployeeRole, resetEmp
 import { jwtDecode } from "jwt-decode";
 import { designSystem, globalStyles } from "../styles/designSystem";
 import Modal from "./Modal";
+import ErrorModal from "./ErrorModal";
 import Button from "./Button";
 import * as XLSX from "xlsx";
 import axios from "axios";
@@ -28,6 +29,7 @@ export default function EmployeeList() {
   const [newPassword, setNewPassword] = useState("");
   
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [formError, setFormError] = useState("");
   const [bulkData, setBulkData] = useState([]);
   const [bulkHeaders, setBulkHeaders] = useState([]);
   const [columnMapping, setColumnMapping] = useState({ Name: "", Email: "", Department: "" });
@@ -68,23 +70,37 @@ export default function EmployeeList() {
   };
 
   const handleAddEmployee = async () => {
-    await addEmployee(newEmployee);
-    setNewEmployee({ name: "", email: "", department: "", status: "" });
-    setShowForm(false);
-    loadEmployees();
+    try {
+      setFormError("");
+      await addEmployee(newEmployee);
+      setNewEmployee({ name: "", email: "", department: "", status: "" });
+      setShowForm(false);
+      loadEmployees();
+    } catch (error) {
+      const msg = error.customMessage || error.response?.data?.message || "Failed to add employee.";
+      setFormError(msg);
+      window.alert(msg);
+    }
   };
 
   const handleUpdateEmployee = async () => {
-    const updateData = {
-      id: editingEmployee.id,
-      name: editingEmployee.name,
-      email: editingEmployee.email,
-      department: editingEmployee.department || "",
-      status: editingEmployee.status
-    };
-    await updateEmployee(editingEmployee.id, updateData);
-    setEditingEmployee(null);
-    loadEmployees();
+    try {
+      setFormError("");
+      const updateData = {
+        id: editingEmployee.id,
+        name: editingEmployee.name,
+        email: editingEmployee.email,
+        department: editingEmployee.department || "",
+        status: editingEmployee.status
+      };
+      await updateEmployee(editingEmployee.id, updateData);
+      setEditingEmployee(null);
+      loadEmployees();
+    } catch (error) {
+      const msg = error.customMessage || error.response?.data?.message || "Failed to update employee.";
+      setFormError(msg);
+      window.alert(msg);
+    }
   };
 
   const handleAssignRole = async (employeeId, role) => {
@@ -228,6 +244,7 @@ export default function EmployeeList() {
 
   return (
     <div style={{ padding: designSystem.spacing.lg, maxWidth: "1100px", margin: "0 auto", fontFamily: "Roboto, Arial, sans-serif" }}>
+      <ErrorModal message={formError} onClose={() => setFormError("")} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md }}>
         <h2 style={{ margin: 0, ...designSystem.typography.h1, color: designSystem.colors.text }}>Employees</h2>
         <div>

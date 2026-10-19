@@ -6,6 +6,7 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using WebAPI.Filters;
 
 namespace WebAPI.Controllers
 {
@@ -27,6 +28,7 @@ namespace WebAPI.Controllers
 
 // GET: api/Timesheet
         [HttpGet()]
+        [PermissionAuthorize("/api/timesheets", "GET")]
         public async Task<ActionResult<IEnumerable<TimesheetDto>>> GetAll()
         {
             try
@@ -96,6 +98,7 @@ namespace WebAPI.Controllers
 
         // POST: api/timesheets
         [HttpPost]
+        [PermissionAuthorize("/api/timesheets", "POST")]
         public async Task<IActionResult> Create([FromBody] TimesheetDto dto)
         {
             try
@@ -115,6 +118,7 @@ namespace WebAPI.Controllers
 
         // PUT: api/timesheets/{id}
         [HttpPut("{id}")]
+        [PermissionAuthorize("/api/timesheets/{id}", "PUT")]
         public async Task<IActionResult> Update(int id, [FromBody] TimesheetDto dto)
         {
             try
@@ -135,7 +139,9 @@ namespace WebAPI.Controllers
         }
 
         // DELETE: api/timesheets/{id}
+
         [HttpDelete("{id}")]
+        [PermissionAuthorize("/api/timesheets/{id}", "DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -154,6 +160,7 @@ namespace WebAPI.Controllers
 
         // PUT: api/timesheets/approve/{id}
         [HttpPut("approve/{id}")]
+        [PermissionAuthorize("/api/approve/{id}", "PUT")]
         [Authorize]
         public async Task<IActionResult> Approve(int id, [FromBody] ApproveTimesheetDto dto)
         {

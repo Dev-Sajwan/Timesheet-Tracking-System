@@ -113,8 +113,19 @@ namespace Application.Services
                 approval.ApprovalDate = DateTime.UtcNow;
                 approval.ApprovalType = approvalType;
                 approval.Description = approvedDescription;
-                // Note: approvedDescription not stored in Approval entity currently
                 await _approvalRepository.UpdateAsync(approval);
+            }
+            else
+            {
+                var newApproval = new Approval
+                {
+                    TimesheetId = timesheetId,
+                    ApprovedBy = approverName,
+                    ApprovalDate = DateTime.UtcNow,
+                    ApprovalType = approvalType,
+                    Description = approvedDescription
+                };
+                await _approvalRepository.AddAsync(newApproval);
             }
         }
 
@@ -133,8 +144,20 @@ namespace Application.Services
                 approval.ApprovedBy = approverName;
                 approval.ApprovalDate = DateTime.UtcNow;
                 approval.ApprovalType = approvalType;
-                approval.Description = approvedDescription; // Store rejection reason in Description field
+                approval.Description = approvedDescription;
                 await _approvalRepository.UpdateAsync(approval);
+            }
+            else
+            {
+                var newApproval = new Approval
+                {
+                    TimesheetId = timesheetId,
+                    ApprovedBy = approverName,
+                    ApprovalDate = DateTime.UtcNow,
+                    ApprovalType = approvalType,
+                    Description = approvedDescription
+                };
+                await _approvalRepository.AddAsync(newApproval);
             }
         }
     }
