@@ -83,6 +83,7 @@ export const resetPassword = (data) => API.post("/auth/reset-password", data);
 // Timesheets
 export const submitTimesheet = (data) => API.post("/timesheets", data);
 export const submitBatchTimesheet = (data) => API.post("/timesheets/batch", data);
+export const saveTimesheetDraft = (data) => API.post("/timesheets/draft", data);
 export const getTimesheetsByEmployee = (employeeId) => API.get(`/timesheets/employee/${employeeId}`);
 export const getAllTimesheets = () => API.get("/timesheets");
 export const deleteTimesheet = (id) => API.delete(`/timesheets/${id}`);

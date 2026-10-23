@@ -15,9 +15,10 @@ namespace Infrastructure.Persistence
             _context = context;
         }
 
-public async Task<IEnumerable<Timesheet>> GetAllAsync()
+        public async Task<IEnumerable<Timesheet>> GetAllAsync()
         {
             return await _context.Timesheets
+                .Where(t => t.ApprovalStatus != "Draft")
                 .Include(t => t.Employee)
                 .Include(t => t.Project)
                 .Include(t => t.Entries)

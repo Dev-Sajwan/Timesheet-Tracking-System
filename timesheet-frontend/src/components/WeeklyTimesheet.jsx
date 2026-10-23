@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-  import { getAllocationsByEmployee, getProjects, submitBatchTimesheet, getTimesheetsByEmployee } from "../Services/Api";
+  import { getAllocationsByEmployee, getProjects, submitBatchTimesheet, saveTimesheetDraft, getTimesheetsByEmployee, deleteTimesheet } from "../Services/Api";
   import { designSystem, globalStyles } from "../styles/designSystem";
   import Button from "./Button";
 
@@ -110,24 +110,72 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
 
   const hasWeekdayEntries = Object.entries(dailyEntries).some(([idx, e]) => e.hours > 0 && !isWeekend(Number(idx)));
 
-  const handleSaveRow = (idx) => {
+  const handleSaveRow = async (idx) => {
     const entry = dailyEntries[idx];
     if (!entry || (!entry.hours && !entry.description)) {
       setError("Please enter hours or description before saving this row.");
       return;
     }
-    setError("");
-    setSuccess(`Row for ${WEEK_DAYS[idx].name} saved locally.`);
+    if (!selectedProjectId) {
+      setError("Please select a project before saving.");
+      return;
+    }
+
+    try {
+      setError("");
+      setLoading(true);
+      const dailyEntriesArray = weekDates.map((date, i) => {
+        const en = dailyEntries[i] || {};
+        return {
+          date: formatDate(date),
+          hours: Number(en.hours || 0),
+          description: en.description || ""
+        };
+      });
+
+      const payload = {
+        employeeId,
+        projectId: Number(selectedProjectId),
+        weekStartDate: weekStart,
+        dailyEntries: dailyEntriesArray
+      };
+
+      await saveTimesheetDraft(payload);
+      setSuccess(`Draft saved permanently for ${WEEK_DAYS[idx].name}!`);
+      loadExistingTimesheets();
+    } catch (e) {
+      console.error(e);
+      setError("Failed to save draft: " + (e.response?.data?.message || e.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleClearRow = (idx) => {
+  const handleClearRow = async (idx) => {
     setDailyEntries(prev => {
       const copy = { ...prev };
       delete copy[idx];
       return copy;
     });
-    setSuccess("");
-    setError("");
+
+    try {
+      // Find matching draft timesheet entry on server and remove it
+      const targetDate = formatDate(weekDates[idx]);
+      const draftMatch = existingTimesheets.find(ts => 
+        ts.approvalStatus === "Draft" && 
+        String(ts.projectId) === String(selectedProjectId) &&
+        formatDate(ts.date) === targetDate
+      );
+
+      if (draftMatch) {
+        await deleteTimesheet(draftMatch.timesheetId);
+        loadExistingTimesheets();
+      }
+      setSuccess(`Draft for ${WEEK_DAYS[idx].name} removed.`);
+      setError("");
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleSubmit = async () => {
@@ -179,6 +227,32 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
       setSelectedProjectId(String(allocations[0].projectId));
     }
   }, [allocations, selectedProjectId]);
+
+  useEffect(() => {
+    if (!selectedProjectId || !existingTimesheets.length) return;
+    const draftsForWeek = existingTimesheets.filter(ts =>
+      ts.approvalStatus === "Draft" &&
+      String(ts.projectId) === String(selectedProjectId) &&
+      formatDate(ts.weekStartDate) === weekStart
+    );
+
+    if (draftsForWeek.length > 0) {
+      const loadedEntries = {};
+      draftsForWeek.forEach(ts => {
+        const tsDate = new Date(ts.date);
+        const dayIndex = weekDates.findIndex(d => formatDate(d) === formatDate(tsDate));
+        if (dayIndex !== -1) {
+          loadedEntries[dayIndex] = {
+            hours: ts.hoursWorked,
+            description: ts.entries?.[0]?.description || ""
+          };
+        }
+      });
+      setDailyEntries(loadedEntries);
+    } else {
+      setDailyEntries({});
+    }
+  }, [selectedProjectId, weekStart, existingTimesheets, weekDates]);
 
   return (
     <div>

@@ -195,19 +195,26 @@ namespace WebAPI.Controllers
             }
         }
 
-        // POST: api/timesheets/batch
-        [HttpPost("batch")]
-        public async Task<IActionResult> CreateBatch([FromBody] BatchTimesheetDto dto)
+        // POST: api/timesheets/draft
+        [HttpPost("draft")]
+        public async Task<IActionResult> SaveDraft([FromBody] BatchTimesheetDto dto)
         {
             try
             {
-                _logger.LogInformation("Creating batch timesheet for employee: {EmployeeId}, week: {WeekStart}", dto.EmployeeId, dto.WeekStartDate);
+                _logger.LogInformation("Saving draft timesheet for employee: {EmployeeId}, week: {WeekStart}", dto.EmployeeId, dto.WeekStartDate);
 
-                var createdTimesheets = new List<Timesheet>();
+                // Remove existing drafts for this employee, project, and week first to update cleanly
+                var existing = await _timesheetService.GetByEmployeeAndWeekAsync(dto.EmployeeId, dto.WeekStartDate);
+                foreach (var ex in existing.Where(t => t.ApprovalStatus == "Draft" && t.ProjectId == dto.ProjectId))
+                {
+                    await _timesheetService.DeleteAsync(ex.TimesheetId);
+                }
+
+                var savedTimesheets = new List<Timesheet>();
 
                 foreach (var entry in dto.DailyEntries)
                 {
-                    if (entry.Hours <= 0) continue; // skip empty days
+                    if (entry.Hours <= 0 && string.IsNullOrWhiteSpace(entry.Description)) continue;
 
                     var timesheet = new Timesheet
                     {
@@ -216,7 +223,7 @@ namespace WebAPI.Controllers
                         Date = entry.Date,
                         HoursWorked = entry.Hours,
                         SubmissionType = "Weekly",
-                        ApprovalStatus = "Pending",
+                        ApprovalStatus = "Draft",
                         WeekStartDate = dto.WeekStartDate,
                         WeekEndDate = dto.WeekStartDate.AddDays(6),
                         Entries = new List<TimesheetEntry>
@@ -231,16 +238,15 @@ namespace WebAPI.Controllers
                     };
 
                     await _timesheetService.AddAsync(timesheet);
-                    createdTimesheets.Add(timesheet);
+                    savedTimesheets.Add(timesheet);
                 }
 
-                _logger.LogInformation("Batch timesheet created successfully: {Count} entries", createdTimesheets.Count);
-                return Ok(new { Message = $"Timesheet submitted successfully with {createdTimesheets.Count} days", Timesheets = _mapper.Map<List<TimesheetDto>>(createdTimesheets) });
+                return Ok(new { Message = "Draft saved successfully", Timesheets = _mapper.Map<List<TimesheetDto>>(savedTimesheets) });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating batch timesheet for employee: {EmployeeId}", dto.EmployeeId);
-                return StatusCode(500, new { Message = "An error occurred while creating the batch timesheet" });
+                _logger.LogError(ex, "Error saving draft timesheet for employee: {EmployeeId}", dto.EmployeeId);
+                return StatusCode(500, new { Message = "An error occurred while saving the draft timesheet" });
             }
         }
 
