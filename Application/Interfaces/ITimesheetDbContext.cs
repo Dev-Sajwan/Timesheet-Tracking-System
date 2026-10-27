@@ -15,6 +15,8 @@ namespace Application.Interfaces
         DbSet<Timesheet> Timesheets { get; }
         DbSet<BenchHour> BenchHours { get; }
         DbSet<LeaveRecord> LeaveRecords { get; }
+        DbSet<LeaveType> LeaveTypes { get; }
+        DbSet<LeaveBalance> LeaveBalances { get; }
         DbSet<Holiday> Holidays { get; }
         DbSet<Approval> Approvals { get; }
         DbSet<Api> Apis { get; }

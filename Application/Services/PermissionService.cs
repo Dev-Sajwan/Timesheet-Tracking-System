@@ -313,6 +313,8 @@ namespace Application.Services
             };
             _context.UserPermissions.Add(userPermission);
             await _context.SaveChangesAsync();
+            
+            _cache.Remove($"user_permissions_{userId}");
             InvalidatePermissionCache();
         }
 
@@ -324,6 +326,8 @@ namespace Application.Services
             {
                 _context.UserPermissions.Remove(userPermission);
                 await _context.SaveChangesAsync();
+                
+                _cache.Remove($"user_permissions_{userId}");
                 InvalidatePermissionCache();
             }
         }
@@ -343,6 +347,9 @@ namespace Application.Services
             };
             _context.UserPermissionSets.Add(userPermissionSet);
             await _context.SaveChangesAsync();
+            
+            // Invalidate user specific cache immediately
+            _cache.Remove($"user_permissions_{userId}");
             InvalidatePermissionCache();
         }
 
@@ -354,6 +361,9 @@ namespace Application.Services
             {
                 _context.UserPermissionSets.Remove(userPermissionSet);
                 await _context.SaveChangesAsync();
+                
+                // Invalidate user specific cache immediately
+                _cache.Remove($"user_permissions_{userId}");
                 InvalidatePermissionCache();
             }
         }
@@ -363,6 +373,11 @@ namespace Application.Services
             _cache.Remove("all_apis");
             _cache.Remove("all_permissions");
             _cache.Remove("all_permission_sets");
+            
+            // Invalidate user permission caches (keys start with user_permissions_ and has_access_)
+            // Since MemoryCache doesn't support wildcards directly, we can use a version token or clear keys if tracked,
+            // or we can store user permission caches with short expirations / check DB directly.
+            // Alternatively, let's also remove cache for specific users if needed, or rely on short TTL.
         }
 
         public async Task<IEnumerable<Profile>> GetAllProfilesAsync()
@@ -403,16 +418,26 @@ namespace Application.Services
         public async Task AssignProfileToUserAsync(string userId, int? profileId)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var emp = await _context.Employees.FirstOrDefaultAsync(e => e.UserId == userId);
+
             if (user != null)
             {
                 user.ProfileId = profileId;
-                await _context.SaveChangesAsync();
+
             }
+            if (emp != null)
+            {
+                emp.ProfileId = profileId;
+            }
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Profile?> GetUserProfileAsync(string userId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var emp = await _context.Employees.FirstOrDefaultAsync(e => e.Id == userId);
+
+            var Uid = emp?.UserId;
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == Uid);
             if (user?.ProfileId != null)
             {
                 return await _context.Profiles.FirstOrDefaultAsync(p => p.ProfileId == user.ProfileId);

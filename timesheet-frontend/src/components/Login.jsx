@@ -49,8 +49,17 @@ const Login = () => {
         if (decoded.employeeId) {
            localStorage.setItem("employeeId", decoded.employeeId);
         }
-        if (decoded.fullName) {
-           localStorage.setItem("fullName", decoded.fullName);
+        if (decoded.uid) {
+           localStorage.setItem("userId", decoded.uid);
+        }
+        if (decoded.profileName) {
+           localStorage.setItem("profileName", decoded.profileName);
+        }
+        const fullNameClaim = decoded.fullName || decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] || decoded.unique_name;
+        if (fullNameClaim) {
+           localStorage.setItem("fullName", fullNameClaim);
+        } else {
+           localStorage.setItem("fullName", decoded.sub || userName);
         }
 
         const userRoles = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] || [];

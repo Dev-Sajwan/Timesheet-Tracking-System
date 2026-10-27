@@ -133,7 +133,7 @@ export const globalStyles = {
     primary: {
       background: designSystem.colors.primary,
       color: designSystem.colors.white,
-      border: 'none',
+      borderWidth: '0', borderStyle: 'solid', borderColor: 'transparent',
       borderRadius: designSystem.radius.md,
       padding: `${designSystem.spacing.sm} ${designSystem.spacing.lg}`,
       cursor: 'pointer',
@@ -151,7 +151,7 @@ export const globalStyles = {
     secondary: {
       background: 'transparent',
       color: designSystem.colors.primary,
-      border: `1px solid ${designSystem.colors.dividerStrong}`,
+      borderWidth: '1px', borderStyle: 'solid', borderColor: designSystem.colors.dividerStrong,
       borderRadius: designSystem.radius.md,
       padding: `${designSystem.spacing.sm} ${designSystem.spacing.lg}`,
       cursor: 'pointer',
@@ -168,7 +168,7 @@ export const globalStyles = {
     subtle: {
       background: 'transparent',
       color: designSystem.colors.text,
-      border: 'none',
+      borderWidth: '0', borderStyle: 'solid', borderColor: 'transparent',
       borderRadius: designSystem.radius.md,
       padding: `${designSystem.spacing.xs} ${designSystem.spacing.sm}`,
       cursor: 'pointer',
@@ -185,7 +185,7 @@ export const globalStyles = {
     danger: {
       background: designSystem.colors.error,
       color: designSystem.colors.white,
-      border: 'none',
+      borderWidth: '0', borderStyle: 'solid', borderColor: 'transparent',
       borderRadius: designSystem.radius.md,
       padding: `${designSystem.spacing.sm} ${designSystem.spacing.lg}`,
       cursor: 'pointer',
@@ -217,11 +217,11 @@ export const globalStyles = {
     outline: 'none',
   },
   inputFocus: {
-    borderColor: designSystem.colors.primary,
+    border: `1px solid ${designSystem.colors.primary}`,
     boxShadow: designSystem.shadows.focus,
   },
   inputError: {
-    borderColor: designSystem.colors.error,
+    border: `1px solid ${designSystem.colors.error}`,
     boxShadow: `0 0 0 2px #FFFFFF, 0 0 0 4px ${designSystem.colors.error}`,
   },
 

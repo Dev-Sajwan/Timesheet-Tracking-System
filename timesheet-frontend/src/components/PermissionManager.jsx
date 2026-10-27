@@ -15,9 +15,15 @@ import {
   unassignPermissionFromUser,
   getUserPermissionSets,
   assignPermissionSetToUser,
-  unassignPermissionSetFromUser
+  unassignPermissionSetFromUser,
+  getProfiles,
+  createProfile,
+  updateProfile,
+  deleteProfile,
+  getUserProfile
 } from "../Services/Api";
 import { designSystem, globalStyles } from "../styles/designSystem";
+import { jwtDecode } from "jwt-decode";
 
 const PermissionManager = () => {
   // Data
@@ -25,6 +31,50 @@ const PermissionManager = () => {
   const [permissions, setPermissions] = useState([]);
   const [permissionSets, setPermissionSets] = useState([]);
   const [users, setUsers] = useState([]);
+  const [profiles, setProfiles] = useState([]);
+  const [profileName, setProfileName] = useState("");
+  const [profileDescription, setProfileDescription] = useState("");
+
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    let adminFound = false;
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const sysAdminClaim = decoded["IsSystemAdmin"] === "true" || decoded["isSystemAdmin"] === true;
+        const profileClaim = (decoded["ProfileName"] || decoded["profileName"] || "").toLowerCase();
+        if (sysAdminClaim || profileClaim.includes("system administrator") || profileClaim.includes("admin")) {
+          adminFound = true;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    const currentProfileName = (localStorage.getItem("profileName") || "").toLowerCase();
+    if (currentProfileName.includes("system administrator") || currentProfileName.includes("admin")) {
+      adminFound = true;
+    }
+
+    const empId = localStorage.getItem("employeeId");
+    if (empId) {
+      getUserProfile(empId).then(res => {
+        if (res.data && (res.data.isSystemAdmin === true || (res.data.name || "").toLowerCase().includes("system administrator"))) {
+          setIsSystemAdmin(true);
+        } else if (adminFound) {
+          setIsSystemAdmin(true);
+        }
+      }).catch(() => {
+        setIsSystemAdmin(adminFound);
+      });
+    } else {
+      setIsSystemAdmin(adminFound);
+    }
+  }, []);
+
+
+
 
   // Navigation
   const [activeTab, setActiveTab] = useState("permissions"); // 'permissions' | 'sets'
@@ -65,16 +115,18 @@ const PermissionManager = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [apisRes, permsRes, setsRes, usersRes] = await Promise.all([
+      const [apisRes, permsRes, setsRes, usersRes, profilesRes] = await Promise.all([
         getAllApis(),
         getAllPermissions(),
         getPermissionSets(),
-        getUsers()
+        getUsers(),
+        getProfiles()
       ]);
       setApis(apisRes.data);
       setPermissions(permsRes.data);
       setPermissionSets(setsRes.data);
       setUsers(usersRes.data);
+      setProfiles(profilesRes.data);
     } catch (e) {
       setError("Failed to load data: " + e.message);
     } finally {
@@ -600,7 +652,7 @@ const PermissionManager = () => {
             <label style={{ ...designSystem.typography.captionStrong, display: "block", marginBottom: designSystem.spacing.xs }}>Sensitive</label>
             {isEditing ? (
               <label style={{ display: "flex", alignItems: "center", gap: designSystem.spacing.sm, cursor: "pointer" }}>
-                <input type="checkbox" checked={formIsSensitive} onChange={e => formIsSensitive = e.target.checked} />
+                <input type="checkbox" checked={formIsSensitive} onChange={e => setFormIsSensitive(e.target.checked)} />
                 <span>Mark as sensitive</span>
               </label>
             ) : (
@@ -712,6 +764,263 @@ const PermissionManager = () => {
 
         {/* Manage Assignments - only show for existing permissions */}
         {!isNew && renderManageAssignments()}
+      </div>
+    );
+  };
+
+  // ============================
+  // RENDER: PROFILES LIST & DETAIL
+  // ============================
+  
+  const renderProfilesList = () => {
+    const isProtectedProfile = (profile) =>
+      (profile?.name || "").trim().toLowerCase() ===
+      "system administrator";
+
+    return (
+      <div style={{ ...globalStyles.card }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: designSystem.spacing.md,
+          }}
+        >
+          <h3 style={{ margin: 0, ...designSystem.typography.h3 }}>
+            Profiles Management
+          </h3>
+
+          {isSystemAdmin && (
+            <button
+              style={globalStyles.button.primary}
+              onClick={() => {
+                setSelectedItem(null);
+                setProfileName("");
+                setProfileDescription("");
+                setIsCreating(true);
+                setIsEditing(true);
+                setActiveView("detail");
+              }}
+            >
+              + Create Profile
+            </button>
+          )}
+        </div>
+
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ ...globalStyles.table, width: "100%" }}>
+            <thead>
+              <tr style={{ ...globalStyles.tableHeader }}>
+                <th style={globalStyles.tableHeader}>
+                  Profile Name
+                </th>
+                <th style={globalStyles.tableHeader}>
+                  Description
+                </th>
+                <th style={globalStyles.tableHeader}>
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {profiles.map((p) => {
+                const protectedProfile = isProtectedProfile(p);
+                const profileId = p.id || p.profileId;
+
+                return (
+                  <tr
+                    key={profileId}
+                    style={{ ...globalStyles.tableRow }}
+                  >
+                    <td
+                      style={{
+                        ...globalStyles.tableCell,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {p.name}
+                      {protectedProfile && (
+                        <span
+                          style={{
+                            marginLeft: "8px",
+                            fontSize: "11px",
+                            color: designSystem.colors.textSecondary,
+                          }}
+                        >
+                          (Protected)
+                        </span>
+                      )}
+                    </td>
+
+                    <td style={{ ...globalStyles.tableCell }}>
+                      {p.description || "—"}
+                    </td>
+
+                    <td style={{ ...globalStyles.tableCell }}>
+                      {protectedProfile ? (
+                        <span
+                          style={{
+                            color: designSystem.colors.textSecondary,
+                            fontSize: "12px",
+                          }}
+                        >
+                          Read-only — Cannot edit or delete
+                        </span>
+                      ) : isSystemAdmin ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: designSystem.spacing.sm,
+                            alignItems: "center",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            style={globalStyles.button.secondary}
+                            onClick={() => {
+                              setSelectedItem(p);
+                              setProfileName(p.name);
+                              setProfileDescription(
+                                p.description || ""
+                              );
+                              setIsCreating(false);
+                              setIsEditing(true);
+                              setActiveView("detail");
+                            }}
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            style={globalStyles.button.danger}
+                            onClick={async () => {
+                              if (
+                                !window.confirm(
+                                  `Delete profile "${p.name}"?`
+                                )
+                              ) {
+                                return;
+                              }
+
+                              try {
+                                await deleteProfile(profileId);
+                                setSuccess(
+                                  "Profile deleted successfully."
+                                );
+                                loadData();
+                              } catch (e) {
+                                setError(
+                                  "Failed to delete profile: " +
+                                    (e.response?.data?.message ||
+                                      e.message)
+                                );
+                              }
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ) : (
+                        <span
+                          style={{
+                            color: designSystem.colors.textSecondary,
+                            fontSize: "12px",
+                          }}
+                        >
+                          Read-only — System Administrator only
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const renderProfileDetail = () => {
+    const isNew = isCreating;
+    return (
+      <div style={{ ...globalStyles.card }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: designSystem.spacing.md }}>
+          <h3 style={{ margin: 0, ...designSystem.typography.h3 }}>
+            {isNew ? "Create Profile" : (isEditing ? "Edit Profile" : "Profile Details")}
+          </h3>
+          <button style={globalStyles.button.secondary} onClick={goBackToList}>
+            Back to List
+          </button>
+        </div>
+
+        {renderMessages()}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: designSystem.spacing.md, maxWidth: "500px" }}>
+          <div>
+            <label style={{ display: "block", marginBottom: "4px", fontWeight: 500, fontSize: "13px" }}>Profile Name</label>
+            <input
+              type="text"
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              disabled={!isEditing || !isSystemAdmin}
+              style={{ ...globalStyles.input }}
+            />
+          </div>
+          <div>
+            <label style={{ display: "block", marginBottom: "4px", fontWeight: 500, fontSize: "13px" }}>Description</label>
+            <textarea
+              value={profileDescription}
+              onChange={(e) => setProfileDescription(e.target.value)}
+              disabled={!isEditing || !isSystemAdmin}
+              rows={3}
+              style={{ ...globalStyles.input, height: "auto" }}
+            />
+          </div>
+
+          {isEditing && isSystemAdmin && (
+            <div style={{ display: "flex", gap: designSystem.spacing.sm, marginTop: designSystem.spacing.md }}>
+              <button
+                style={globalStyles.button.primary}
+                onClick={async () => {
+                  try {
+                    clearMessages();
+                    if (isNew) {
+                      await createProfile({ name: profileName, description: profileDescription });
+                      setSuccess("Profile created successfully.");
+                    } else {
+                      await updateProfile(selectedItem.id || selectedItem.profileId, { name: profileName, description: profileDescription });
+                      setSuccess("Profile updated successfully.");
+                    }
+                    loadData();
+                    goBackToList();
+                  } catch (e) {
+                    setError("Failed to save profile: " + (e.response?.data?.message || e.message));
+                  }
+                }}
+              >
+                Save Profile
+              </button>
+              <button style={globalStyles.button.secondary} onClick={goBackToList}>
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {!isEditing && isSystemAdmin && (
+            <div>
+              <button
+                style={globalStyles.button.primary}
+                onClick={() => setIsEditing(true)}
+              >
+                Edit Profile
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -990,6 +1299,7 @@ const PermissionManager = () => {
           >
             Permission Sets
           </button>
+          {/* Profiles tab removed in favor of standalone ProfilesSection */}
         </div>
       )}
 

@@ -13,11 +13,15 @@ namespace Application.Mappings
             CreateMap<Approval, ApprovalDto>().ReverseMap();
             CreateMap<Employee, EmployeeDto>()
                 .ForMember(dest => dest.Roles, opt => opt.Ignore())
+                .ForMember(dest => dest.ProfileName, opt => opt.MapFrom(src => src.Profile != null ? src.Profile.Name : null))
+                .ForMember(dest => dest.ProfileId, opt => opt.MapFrom(src => src.ProfileId))
                 .ForMember(dest => dest.Allocations, opt => opt.MapFrom(src => src.Allocations)); // Map allocations from Employee entity
             CreateMap<EmployeeDto, Employee>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore()) // Don't overwrite ID
                 .ForMember(dest => dest.UserId, opt => opt.Ignore()) // Don't overwrite UserId
                 .ForMember(dest => dest.User, opt => opt.Ignore())
+                .ForMember(dest => dest.Profile, opt => opt.Ignore())
+                .ForMember(dest => dest.ProfileId, opt => opt.MapFrom(src => src.ProfileId))
                 .ForMember(dest => dest.Allocations, opt => opt.Ignore())
                 .ForMember(dest => dest.Timesheets, opt => opt.Ignore())
                 .ForMember(dest => dest.BenchHours, opt => opt.Ignore())

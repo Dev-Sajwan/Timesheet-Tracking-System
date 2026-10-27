@@ -182,8 +182,16 @@ namespace WebAPI.Controllers
                 {
                     UserName = userName,
                     Email = dto.Email,
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    FullName = dto.Name
                 };
+
+                var createResult = await _userManager.CreateAsync(user, defaultPassword);
+                if (!createResult.Succeeded)
+                {
+                    _logger.LogError("Failed to create Identity user: {Errors}", string.Join(", ", createResult.Errors.Select(e => e.Description)));
+                    return BadRequest(new { Message = "Failed to create user", Errors = createResult.Errors });
+                }
 
                 // Assign Employee role by default
                 var roleResult = await _userManager.AddToRoleAsync(user, "L4");
@@ -193,13 +201,6 @@ namespace WebAPI.Controllers
                     await _userManager.DeleteAsync(user);
                     _logger.LogError("Failed to assign role to user: {Errors}", string.Join(", ", roleResult.Errors.Select(e => e.Description)));
                     return BadRequest(new { Message = "Failed to assign role", Errors = roleResult.Errors });
-                }
-
-                var createResult = await _userManager.CreateAsync(user, defaultPassword);
-                if (!createResult.Succeeded)
-                {
-                    _logger.LogError("Failed to create Identity user: {Errors}", string.Join(", ", createResult.Errors.Select(e => e.Description)));
-                    return BadRequest(new { Message = "Failed to create user", Errors = createResult.Errors });
                 }
 
                 
@@ -212,10 +213,17 @@ namespace WebAPI.Controllers
                     Email = dto.Email,
                     Department = dto.Department,
                     Status = dto.Status,
-                    UserId = user.Id
+                    UserId = user.Id,
+                    ProfileId = dto.ProfileId
                 };
 
                 await _employeeService.AddAsync(employee);
+
+                if (dto.ProfileId.HasValue)
+                {
+                    user.ProfileId = dto.ProfileId;
+                    await _userManager.UpdateAsync(user);
+                }
                 _logger.LogInformation("Employee created successfully: {EmployeeId}", employee.Id);
 
                 return CreatedAtAction(nameof(GetById), new { id = employee.Id }, new
@@ -251,8 +259,20 @@ namespace WebAPI.Controllers
                 existingEmployee.Email = dto.Email;
                 existingEmployee.Status = dto.Status;
                 existingEmployee.Department = dto.Department;
+                existingEmployee.ProfileId = dto.ProfileId;
 
                 await _employeeService.UpdateAsync(existingEmployee);
+
+                if (!string.IsNullOrEmpty(existingEmployee.UserId))
+                {
+                    var user = await _userManager.FindByIdAsync(existingEmployee.UserId);
+                    if (user != null)
+                    {
+                        user.ProfileId = dto.ProfileId;
+                        user.FullName = dto.Name;
+                        await _userManager.UpdateAsync(user);
+                    }
+                }
                 _logger.LogInformation("Employee updated successfully: {EmployeeId}", id);
                 return Ok(new { Message = "Employee updated successfully!" });
             }

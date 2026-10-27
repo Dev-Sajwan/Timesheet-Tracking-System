@@ -25,6 +25,7 @@ namespace WebAPI.Controllers
         private readonly ITimesheetDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthController> _logger;
+        private readonly IEmailService _emailService;
 
         public AuthController(
             UserManager<ApplicationUser> userManager,
@@ -33,7 +34,8 @@ namespace WebAPI.Controllers
             IEmployeeRepository employeeRepository,
             ITimesheetDbContext context,
             IConfiguration configuration,
-            ILogger<AuthController> logger)
+            ILogger<AuthController> logger,
+            IEmailService emailService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -42,6 +44,7 @@ namespace WebAPI.Controllers
             _context = context;
             _configuration = configuration;
             _logger = logger;
+            _emailService = emailService;
         }
 
         // Register new user + employee
@@ -179,6 +182,7 @@ namespace WebAPI.Controllers
                         if (profile != null)
                         {
                             authClaims.Add(new Claim("profileId", profile.ProfileId.ToString()));
+                            authClaims.Add(new Claim("profileName", profile.Name));
                             authClaims.Add(new Claim("isSystemAdmin", profile.IsSystemAdmin.ToString().ToLower()));
                         }
                     }
@@ -277,44 +281,96 @@ namespace WebAPI.Controllers
             }
         }
 
-        // Forgot Password - sends reset token (in real app, send via email)
+        // Forgot Password - sends reset token via email
         [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto request)
-        {
-            try
             {
-                _logger.LogInformation("Forgot password request for email: {Email}", request.Email);
-                if (string.IsNullOrWhiteSpace(request.Email))
-                    return BadRequest(new { Message = "Email is required." });
-
-                var user = await _userManager.FindByEmailAsync(request.Email);
-                if (user == null)
+                if (request == null ||
+                    string.IsNullOrWhiteSpace(request.Email))
                 {
-                    // Don't reveal if user exists - always return success for security
-                    _logger.LogInformation("Forgot password request for non-existent email (security): {Email}", request.Email);
-                    return Ok(new { Message = "If the email exists, a reset link has been sent." });
+                    return BadRequest(new
+                    {
+                        Message = "Email is required."
+                    });
                 }
 
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                
-                // In production, send this token via email
-                // For development, return it in response (remove in production!)
-                _logger.LogInformation("Password reset token generated for user: {UserId}", user.Id);
-                return Ok(new 
-                { 
-                    Message = "If the email exists, a reset link has been sent.",
-                    // REMOVE IN PRODUCTION - only for development testing
-                    ResetToken = token,
-                    UserId = user.Id
-                });
+                try
+                {
+                    var user = await _userManager.FindByEmailAsync(
+                        request.Email.Trim());
+
+                    // Avoid revealing whether an account exists.
+                    if (user == null)
+                    {
+                        return Ok(new
+                        {
+                            Message = "If the email exists, a reset link has been sent."
+                        });
+                    }
+
+                    if (string.IsNullOrWhiteSpace(user.Email))
+                    {
+                        _logger.LogWarning(
+                            "Password reset requested for a user without an email.");
+
+                        return Ok(new
+                        {
+                            Message = "If the email exists, a reset link has been sent."
+                        });
+                    }
+
+                    var token =
+                        await _userManager.GeneratePasswordResetTokenAsync(user);
+
+                    var frontendUrl =
+                        _configuration["FrontendSettings:Url"]
+                        ?? "http://localhost:3000";
+
+                    var resetLink =
+                        $"{frontendUrl.TrimEnd('/')}/reset-password" +
+                        $"?email={Uri.EscapeDataString(user.Email)}" +
+                        $"&token={Uri.EscapeDataString(token)}";
+
+                    var subject = "Password Reset Request";
+
+                    var htmlMessage = $"""
+                <p>Hello,</p>
+                <p>You requested a password reset.</p>
+                <p>
+                    <a href="{System.Net.WebUtility.HtmlEncode(resetLink)}">
+                        Reset Password
+                    </a>
+                </p>
+                <p>If you did not request this, please ignore this email.</p>
+                """;
+
+                    await _emailService.SendEmailAsync(
+                        user.Email,
+                        subject,
+                        htmlMessage);
+
+                    _logger.LogInformation(
+                        "Password reset email accepted for user {UserId}",
+                        user.Id);
+
+                    return Ok(new
+                    {
+                        Message = "If the email exists, a reset link has been sent."
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Failed to process the password reset request.");
+
+                    return StatusCode(500, new
+                    {
+                        Message = "Unable to process the request. Please try again later."
+                    });
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error generating password reset token for email: {Email}", request.Email);
-                return StatusCode(500, new { Message = "An error occurred while processing the request" });
-            }
-        }
 
         // Reset Password
         [AllowAnonymous]

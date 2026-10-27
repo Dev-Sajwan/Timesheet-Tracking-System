@@ -494,10 +494,10 @@ export default function WeeklyTimesheet({ employeeId, onSubmitted }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {existingTimesheets.map((ts) => {
+                  {existingTimesheets.map((ts, index) => {
                     const proj = projects.find(p => p.projectId === ts.projectId);
                     return (
-                      <tr key={ts.id} style={{ ...globalStyles.tableRowEven }}>
+                      <tr key={ts.id || ts.timesheetId || index} style={{ ...globalStyles.tableRowEven }}>
                         <td style={{ ...globalStyles.tableCell }}>{proj?.projectName || `Project ${ts.projectId}`}</td>
                         <td style={{ ...globalStyles.tableCell }}>{ts.weekStartDate ? new Date(ts.weekStartDate).toLocaleDateString("en-GB") : "—"}</td>
                         <td style={{ ...globalStyles.tableCell }}>{(ts.entries || []).reduce((sum, e) => sum + (e.hours || 0), 0).toFixed(1)} hrs</td>

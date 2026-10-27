@@ -18,6 +18,8 @@ namespace Infrastructure.Persistence
         public DbSet<Timesheet> Timesheets { get; set; }
         public DbSet<BenchHour> BenchHours { get; set; }
         public DbSet<LeaveRecord> LeaveRecords { get; set; }
+        public DbSet<LeaveType> LeaveTypes { get; set; }
+        public DbSet<LeaveBalance> LeaveBalances { get; set; }
         public DbSet<Holiday> Holidays { get; set; }
         public DbSet<Approval> Approvals { get; set; }
         public DbSet<Api> Apis { get; set; }

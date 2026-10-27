@@ -76,7 +76,6 @@ export const deleteProfile = (id) => API.delete(`/profile/profiles/${id}`);
 export const getUsers = () => API.get("/profile/users");
 export const assignProfileToUser = (userId, profileId) => API.put(`/profile/users/${userId}/profile`, { profileId });
 export const getUserProfile = (userId) => API.get(`/profile/users/${userId}/profile`);
-// export const register = (data) => API.post("/auth/register", data);
 export const forgotPassword = (data) => API.post("/auth/forgot-password", data);
 export const resetPassword = (data) => API.post("/auth/reset-password", data);
 
@@ -127,9 +126,17 @@ export const getBusinessUnits = () => API.get("/businessunits");
 export const addBusinessUnit = (data) => API.post("/businessunits", data);
 export const deleteBusinessUnit = (id) => API.delete(`/businessunits/${id}`);
 
-// LeaveRecords
+// LeaveRecords & Balances
 export const addLeaveRecord = (data) => API.post("/leaverecords", data);
 export const getLeaveRecords = () => API.get("/leaverecords");
+export const getLeaveRecordsByEmployee = (employeeId) => API.get(`/leaverecords/employee/${employeeId}`);
+export const applyLeave = (data) => API.post("/leaverecords/apply", data);
+export const cancelLeave = (id, employeeId) => API.post(`/leaverecords/${id}/cancel?employeeId=${employeeId}`);
+export const processLeaveApproval = (data) => API.post("/leaverecords/approve", data);
+export const getLeaveBalances = (employeeId, year = 2026) => API.get(`/leaverecords/balances/${employeeId}?year=${year}`);
+export const adjustLeaveBalance = (data) => API.post("/leaverecords/balances/adjust", data);
+export const getLeaveTypes = () => API.get("/leaverecords/types");
+export const updateLeaveTypeQuota = (id, quota) => API.put(`/leaverecords/types/${id}/quota`, quota, { headers: { "Content-Type": "application/json" } });
 
 // Holidays
 export const addHoliday = (data) => API.post("/holidays", data);

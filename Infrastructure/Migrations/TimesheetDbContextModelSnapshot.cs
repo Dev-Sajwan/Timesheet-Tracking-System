@@ -333,6 +333,42 @@ namespace Infrastructure.Migrations
                     b.ToTable("Holidays");
                 });
 
+            modelBuilder.Entity("Domain.Entities.LeaveBalance", b =>
+                {
+                    b.Property<int>("LeaveBalanceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LeaveBalanceId"));
+
+                    b.Property<decimal>("CreditedBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("EmployeeId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("LeaveTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LeavesTaken")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("OpeningBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("LeaveBalanceId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("LeaveTypeId");
+
+                    b.ToTable("LeaveBalances");
+                });
+
             modelBuilder.Entity("Domain.Entities.LeaveRecord", b =>
                 {
                     b.Property<int>("LeaveRecordId")
@@ -341,24 +377,79 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LeaveRecordId"));
 
-                    b.Property<DateTime>("Date")
+                    b.Property<string>("ApprovalStage")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AttachmentPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("EmployeeId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("Hours")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("LeaveType")
+                    b.Property<string>("HalfDayType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("LeaveTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TotalDays")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("LeaveRecordId");
 
                     b.HasIndex("EmployeeId");
 
+                    b.HasIndex("LeaveTypeId");
+
                     b.ToTable("LeaveRecords");
+                });
+
+            modelBuilder.Entity("Domain.Entities.LeaveType", b =>
+                {
+                    b.Property<int>("LeaveTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LeaveTypeId"));
+
+                    b.Property<decimal>("DefaultQuota")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("LeaveTypeId");
+
+                    b.ToTable("LeaveTypes");
                 });
 
             modelBuilder.Entity("Domain.Entities.Permission", b =>
@@ -368,9 +459,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ApiId")
-                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -385,9 +473,22 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.ToTable("Permissions");
+                });
+
+            modelBuilder.Entity("Domain.Entities.PermissionApi", b =>
+                {
+                    b.Property<int>("PermissionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApiId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PermissionId", "ApiId");
+
                     b.HasIndex("ApiId");
 
-                    b.ToTable("Permissions");
+                    b.ToTable("PermissionApis");
                 });
 
             modelBuilder.Entity("Domain.Entities.PermissionSet", b =>
@@ -831,24 +932,59 @@ namespace Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Domain.Entities.LeaveBalance", b =>
+                {
+                    b.HasOne("Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.LeaveType", "LeaveType")
+                        .WithMany()
+                        .HasForeignKey("LeaveTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("LeaveType");
+                });
+
             modelBuilder.Entity("Domain.Entities.LeaveRecord", b =>
                 {
                     b.HasOne("Domain.Entities.Employee", "Employee")
                         .WithMany("LeaveRecords")
                         .HasForeignKey("EmployeeId");
 
+                    b.HasOne("Domain.Entities.LeaveType", "LeaveType")
+                        .WithMany()
+                        .HasForeignKey("LeaveTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Employee");
+
+                    b.Navigation("LeaveType");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Permission", b =>
+            modelBuilder.Entity("Domain.Entities.PermissionApi", b =>
                 {
                     b.HasOne("Domain.Entities.Api", "Api")
-                        .WithMany("Permissions")
+                        .WithMany("PermissionApis")
                         .HasForeignKey("ApiId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Domain.Entities.Permission", "Permission")
+                        .WithMany("PermissionApis")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Api");
+
+                    b.Navigation("Permission");
                 });
 
             modelBuilder.Entity("Domain.Entities.PermissionSetApi", b =>
@@ -1030,7 +1166,7 @@ namespace Infrastructure.Migrations
                 {
                     b.Navigation("ApiPermissionSets");
 
-                    b.Navigation("Permissions");
+                    b.Navigation("PermissionApis");
                 });
 
             modelBuilder.Entity("Domain.Entities.ApplicationUser", b =>
@@ -1063,6 +1199,8 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Permission", b =>
                 {
+                    b.Navigation("PermissionApis");
+
                     b.Navigation("PermissionSetPermissions");
 
                     b.Navigation("UserPermissions");

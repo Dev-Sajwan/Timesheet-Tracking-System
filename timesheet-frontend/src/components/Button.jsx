@@ -51,7 +51,10 @@ const Button = ({ children, variant = 'primary', onClick, disabled = false, type
                     isPressed && !disabled && variant === 'danger' ? designSystem.colors.error :
                     isHovered && !disabled && variant === 'danger' ? '#B42A01' :
                     baseStyle.background,
-        borderColor: isHovered && !disabled && variant === 'secondary' ? designSystem.colors.primary : baseStyle.borderColor,
+                    borderWidth: '1px', borderStyle: 'solid', borderColor:
+                        isHovered && !disabled && variant === 'secondary'
+                          ? designSystem.colors.primary
+                          : baseStyle.borderColor || 'transparent',
         color: (isHovered || isPressed) && !disabled && variant === 'secondary' ? designSystem.colors.primaryHover :
                (isHovered || isPressed) && !disabled && variant === 'subtle' ? designSystem.colors.text : baseStyle.color,
         transition: `all ${designSystem.transitions.fast}`,

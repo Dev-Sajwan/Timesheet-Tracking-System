@@ -6,7 +6,9 @@ import TimesheetForm from "./TimesheetForm";
 import WeeklyTimesheet from "./WeeklyTimesheet";
 import HolidayList from "./HolidayList";
 import TimesheetApproval from "./TimesheetApproval";
+import LeaveManagement from "./LeaveManagement";
 import PermissionManager from "./PermissionManager";
+import ProfilesSection from "./ProfilesSection";
 import ErrorModal from "./ErrorModal";
 import useInactivityTimeout from "../hooks/useInactivityTimeout";
 import { useNavigate } from "react-router-dom";
@@ -125,10 +127,18 @@ const UnifiedDashboard = () => {
             <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "holidays" ? "bold" : "normal" }} onClick={() => setActiveTab("holidays")}>
               📅 Holidays
             </li>
+            <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "leaves" ? "bold" : "normal" }} onClick={() => setActiveTab("leaves")}>
+              🏖️ Leave Management
+            </li>
             {isAdmin && (
-              <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "permissions" ? "bold" : "normal" }} onClick={() => setActiveTab("permissions")}>
-                🔒 Permissions
-              </li>
+              <>
+                <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "permissions" ? "bold" : "normal" }} onClick={() => setActiveTab("permissions")}>
+                  🔒 Permissions
+                </li>
+                <li style={{ margin: "15px 0", cursor: "pointer", fontWeight: activeTab === "profiles" ? "bold" : "normal" }} onClick={() => setActiveTab("profiles")}>
+                  👥 Profiles
+                </li>
+              </>
             )}
           </ul>
         </div>
@@ -142,7 +152,9 @@ const UnifiedDashboard = () => {
           {activeTab === "projects" && <ProjectList />}
           {activeTab === "allocations" && <AllocationList />}
           {activeTab === "holidays" && <HolidayList />}
+          {activeTab === "leaves" && <LeaveManagement />}
           {isAdmin && activeTab === "permissions" && <PermissionManager />}
+          {isAdmin && activeTab === "profiles" && <ProfilesSection />}
         </div>
       </div>
     </div>

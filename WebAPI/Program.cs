@@ -3,8 +3,11 @@ using Application.Mappings;
 using Application.Services;
 using Domain.Entities;
 using Infrastructure.Persistence;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Azure.Identity;
+using Microsoft.Graph;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -45,6 +48,7 @@ builder.Services.AddScoped<IApprovalRepository, ApprovalRepository>();
 builder.Services.AddScoped<IAllocationRepository, AllocationRepository>();
 builder.Services.AddScoped<IHolidayRepository, HolidayRepository>();
 builder.Services.AddScoped<ILeaveRecordRepository, LeaveRecordRepository>();
+builder.Services.AddScoped<ILeaveBalanceRepository, LeaveBalanceRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<ITimesheetRepository, TimesheetRepository>();
 builder.Services.AddScoped<IPasswordHasher<Employee>, PasswordHasher<Employee>>();
@@ -60,6 +64,7 @@ builder.Services.AddScoped<ILeaveRecordService, LeaveRecordService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ITimesheetService, TimesheetService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddMemoryCache();
 
 
@@ -148,6 +153,35 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]))
     };
 });
+
+builder.Services.AddSingleton<GraphServiceClient>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+
+    var tenantId = configuration["AzureAd:TenantId"];
+    var clientId = configuration["AzureAd:ClientId"];
+    var clientSecret = configuration["AzureAd:ClientSecret"];
+
+    if (string.IsNullOrWhiteSpace(tenantId) ||
+        string.IsNullOrWhiteSpace(clientId) ||
+        string.IsNullOrWhiteSpace(clientSecret))
+    {
+        throw new InvalidOperationException(
+            "AzureAd tenant ID, client ID, and client secret are required.");
+    }
+
+    var credential = new ClientSecretCredential(
+        tenantId,
+        clientId,
+        clientSecret);
+
+    return new GraphServiceClient(
+        credential,
+        new[] { "https://graph.microsoft.com/.default" });
+});
+
+builder.Services.AddTransient<IEmailService, EmailService>();
+
 
 var app = builder.Build();
 

@@ -15,24 +15,26 @@ public class EmployeeRepository : IEmployeeRepository
         await _context.Employees
             .Include(e => e.Allocations)
             .Include(e => e.Timesheets)
+            .Include(e => e.Profile)
             .FirstOrDefaultAsync(e => e.Id == id);
 
     public async Task<Employee?> GetByUserIdAsync(string userId) =>
         await _context.Employees
             .Include(e => e.Allocations)
             .Include(e => e.Timesheets)
+            .Include(e => e.Profile)
             .FirstOrDefaultAsync(e => e.UserId == userId);
 
     public async Task<Employee?> GetByEmailAsync(string email) =>
         await _context.Employees
-            //.Include(e => e.Allocations)
-            //.Include(e => e.Timesheets)
+            .Include(e => e.Profile)
             .FirstOrDefaultAsync(e => e.Email != null && e.Email == email);
 
     public async Task<IEnumerable<Employee>> GetAllAsync() =>
         await _context.Employees
             .Include(e => e.Allocations)
             .Include(e => e.Timesheets)
+            .Include(e => e.Profile)
             .ToListAsync();
 
     public async Task AddAsync(Employee employee)

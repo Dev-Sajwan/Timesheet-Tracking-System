@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { getEmployees, addEmployee, updateEmployee, assignEmployeeRole, resetEmployeePassword, getRoles} from "../Services/Api";
+import { getEmployees, addEmployee, updateEmployee, assignEmployeeRole, resetEmployeePassword, getRoles } from "../Services/Api";
 import { jwtDecode } from "jwt-decode";
 import { designSystem, globalStyles } from "../styles/designSystem";
 import Modal from "./Modal";
@@ -21,7 +21,7 @@ export default function EmployeeList() {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [newEmployee, setNewEmployee] = useState({ name: "", email: "", department: "", status: "" });
+  const [newEmployee, setNewEmployee] = useState({ name: "", email: "", department: "", status: "", profileId: "" });
   const [assigningRole, setAssigningRole] = useState(null);
   const [selectedRole, setSelectedRole] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -60,19 +60,36 @@ export default function EmployeeList() {
   };
 
   const loadEmployees = async () => {
-    const res = await getEmployees();
-    setEmployees(res.data);
+    try {
+      const res = await getEmployees();
+      setEmployees(res.data);
+    } catch (error) {
+      const msg = error.customMessage || error.response?.data?.message || "Failed to load employees.";
+      setFormError(msg);
+    }
   };
 
   const loadRoles = async () => {
-    const res = await getRoles();
-    setRoles(res.data);
+    try {
+      const res = await getRoles();
+      setRoles(res.data);
+    } catch (error) {
+      const msg = error.customMessage || error.response?.data?.message || "Failed to load roles.";
+      setFormError(msg);
+    }
   };
 
   const handleAddEmployee = async () => {
     try {
       setFormError("");
-      await addEmployee(newEmployee);
+      const payload = {
+        name: newEmployee.name,
+        email: newEmployee.email,
+        department: newEmployee.department || "",
+        status: newEmployee.status || "Active",
+        profileId: null
+      };
+      await addEmployee(payload);
       setNewEmployee({ name: "", email: "", department: "", status: "" });
       setShowForm(false);
       loadEmployees();
@@ -91,7 +108,8 @@ export default function EmployeeList() {
         name: editingEmployee.name,
         email: editingEmployee.email,
         department: editingEmployee.department || "",
-        status: editingEmployee.status
+        status: editingEmployee.status,
+        profileId: editingEmployee.profileId !== undefined ? editingEmployee.profileId : null
       };
       await updateEmployee(editingEmployee.id, updateData);
       setEditingEmployee(null);
@@ -433,6 +451,7 @@ export default function EmployeeList() {
             <p><strong>Roles:</strong> {formatRoles(selectedEmployee.roles)}</p>
             <p><strong>Status:</strong> {selectedEmployee.status}</p>
             <p><strong>Department:</strong> {selectedEmployee.department || "N/A"}</p>
+            <p><strong>Profile:</strong> <span style={{ fontWeight: 500, color: designSystem.colors.primary }}>{selectedEmployee.profileName || "None"}</span></p>
           </div>
         )}
       </Modal>

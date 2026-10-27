@@ -13,6 +13,9 @@
         
         // Allocations from Employee entity
         public List<AllocationDto> Allocations { get; set; } = new();
+
+        public int? ProfileId { get; set; }
+        public string? ProfileName { get; set; }
     }
 
     public class CreateUserRequestDto

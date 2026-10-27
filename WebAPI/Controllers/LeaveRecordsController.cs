@@ -4,7 +4,6 @@ using AutoMapper;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace WebAPI.Controllers
 {
@@ -27,39 +26,31 @@ namespace WebAPI.Controllers
             _logger = logger;
         }
 
-        // GET: api/leaverecords/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<LeaveRecordDto>> GetById(int id)
-        {
-            try
-            {
-                _logger.LogInformation("Getting leave record by ID: {LeaveRecordId}", id);
-                var leaveRecord = await _leaveRecordService.GetByIdAsync(id);
-
-                if (leaveRecord == null)
-                {
-                    _logger.LogWarning("Leave record not found: {LeaveRecordId}", id);
-                    return NotFound(new { Message = "Leave record not found" });
-                }
-
-                return Ok(_mapper.Map<LeaveRecordDto>(leaveRecord));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting leave record by ID: {LeaveRecordId}", id);
-                return StatusCode(500, new { Message = "An error occurred while retrieving the leave record" });
-            }
-        }
-
-        // GET: api/leaverecords
         [HttpGet]
         public async Task<ActionResult<IEnumerable<LeaveRecordDto>>> GetAll()
         {
             try
             {
-                _logger.LogInformation("Getting all leave records");
-                var leaveRecords = await _leaveRecordService.GetAllAsync();
-                return Ok(_mapper.Map<IEnumerable<LeaveRecordDto>>(leaveRecords));
+                var records = await _leaveRecordService.GetAllAsync();
+                var dtos = records.Select(r => new LeaveRecordDto
+                {
+                    LeaveRecordId = r.LeaveRecordId,
+                    EmployeeId = r.EmployeeId,
+                    LeaveTypeId = r.LeaveTypeId,
+                    LeaveTypeName = r.LeaveType?.Name,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    TotalDays = r.TotalDays,
+                    HalfDayType = r.HalfDayType,
+                    Reason = r.Reason,
+                    AttachmentPath = r.AttachmentPath,
+                    Status = r.Status,
+                    ApprovalStage = r.ApprovalStage,
+                    RejectionReason = r.RejectionReason,
+                    CreatedAt = r.CreatedAt,
+                    EmployeeName = r.Employee != null ? r.Employee.Name : null
+                });
+                return Ok(dtos);
             }
             catch (Exception ex)
             {
@@ -68,39 +59,187 @@ namespace WebAPI.Controllers
             }
         }
 
-        // POST: api/leaverecords
-        [HttpPost]
-        public async Task<IActionResult> Add([FromBody] LeaveRecordDto dto)
+        [HttpGet("employee/{employeeId}")]
+        public async Task<ActionResult<IEnumerable<LeaveRecordDto>>> GetByEmployee(string employeeId)
         {
             try
             {
-                _logger.LogInformation("Adding new leave record for employee: {EmployeeId}", dto.EmployeeId);
-                var leaveRecord = _mapper.Map<LeaveRecord>(dto);
-                await _leaveRecordService.AddAsync(leaveRecord);
-                _logger.LogInformation("Leave record added successfully");
-                return Ok(new { Message = "Leave record added successfully!" });
+                var records = await _leaveRecordService.GetByEmployeeIdAsync(employeeId);
+                var dtos = records.Select(r => new LeaveRecordDto
+                {
+                    LeaveRecordId = r.LeaveRecordId,
+                    EmployeeId = r.EmployeeId,
+                    LeaveTypeId = r.LeaveTypeId,
+                    LeaveTypeName = r.LeaveType?.Name,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    TotalDays = r.TotalDays,
+                    HalfDayType = r.HalfDayType,
+                    Reason = r.Reason,
+                    AttachmentPath = r.AttachmentPath,
+                    Status = r.Status,
+                    ApprovalStage = r.ApprovalStage,
+                    RejectionReason = r.RejectionReason,
+                    CreatedAt = r.CreatedAt,
+                    EmployeeName = r.Employee != null ? r.Employee.Name : null
+                });
+                return Ok(dtos);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding leave record");
-                return StatusCode(500, new { Message = "An error occurred while adding the leave record" });
+                _logger.LogError(ex, "Error getting leave records for employee: {EmployeeId}", employeeId);
+                return StatusCode(500, new { Message = "An error occurred while retrieving employee leave records" });
             }
         }
 
-        // DELETE: api/leaverecords/{id}
+        [HttpPost("apply")]
+        public async Task<ActionResult<LeaveRecordDto>> ApplyLeave([FromBody] LeaveRecordDto dto)
+        {
+            try
+            {
+                var record = new LeaveRecord
+                {
+                    EmployeeId = dto.EmployeeId,
+                    LeaveTypeId = dto.LeaveTypeId,
+                    StartDate = dto.StartDate,
+                    EndDate = dto.EndDate,
+                    HalfDayType = string.IsNullOrEmpty(dto.HalfDayType) ? "None" : dto.HalfDayType,
+                    Reason = dto.Reason,
+                    AttachmentPath = dto.AttachmentPath,
+                    Hours = (int)(dto.TotalDays > 0 ? dto.TotalDays * 8 : 8)
+                };
+                
+
+                var created = await _leaveRecordService.ApplyLeaveAsync(record);
+                return Ok(new { Message = "Leave applied successfully!", LeaveRecordId = created.LeaveRecordId, TotalDays = created.TotalDays });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error applying leave");
+                return StatusCode(500, new { Message = "An error occurred while applying for leave" });
+            }
+        }
+
+        [HttpPost("{id}/cancel")]
+        public async Task<IActionResult> CancelLeave(int id, [FromQuery] string employeeId)
+        {
+            try
+            {
+                await _leaveRecordService.CancelLeaveAsync(id, employeeId);
+                return Ok(new { Message = "Leave request cancelled successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling leave record: {Id}", id);
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+
+        [HttpPost("approve")]
+        public async Task<IActionResult> ProcessApproval([FromBody] LeaveApprovalDto dto)
+        {
+            try
+            {
+                var record = await _leaveRecordService.GetByIdAsync(dto.LeaveRecordId);
+                if (record == null) return NotFound(new { Message = "Leave record not found." });
+
+                await _leaveRecordService.ProcessApprovalAsync(dto.LeaveRecordId, dto.Action, record.ApprovalStage, dto.RejectionReason);
+                return Ok(new { Message = $"Leave request {dto.Action}ed successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing approval for leave record: {Id}", dto.LeaveRecordId);
+                return StatusCode(500, new { Message = "An error occurred while processing the leave approval." });
+            }
+        }
+
+        [HttpGet("balances/{employeeId}")]
+        public async Task<ActionResult<IEnumerable<LeaveBalanceDto>>> GetBalances(string employeeId, [FromQuery] int year = 2026)
+        {
+            try
+            {
+                var balances = await _leaveRecordService.GetEmployeeBalancesAsync(employeeId, year);
+                var dtos = balances.Select(b => new LeaveBalanceDto
+                {
+                    LeaveBalanceId = b.LeaveBalanceId,
+                    EmployeeId = b.EmployeeId,
+                    LeaveTypeId = b.LeaveTypeId,
+                    LeaveTypeName = b.LeaveType?.Name,
+                    Year = b.Year,
+                    OpeningBalance = b.OpeningBalance,
+                    CreditedBalance = b.CreditedBalance,
+                    LeavesTaken = b.LeavesTaken,
+                    ClosingBalance = b.ClosingBalance
+                });
+                return Ok(dtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving balances for employee: {EmployeeId}", employeeId);
+                return StatusCode(500, new { Message = "An error occurred while retrieving leave balances." });
+            }
+        }
+
+        [HttpPost("balances/adjust")]
+        public async Task<IActionResult> AdjustBalance([FromBody] LeaveAdjustmentDto dto)
+        {
+            try
+            {
+                await _leaveRecordService.AdjustBalanceAsync(dto.EmployeeId, dto.LeaveTypeId, dto.Year, dto.AdjustmentAmount, dto.AdjustmentType);
+                return Ok(new { Message = "Leave balance adjusted successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adjusting leave balance");
+                return StatusCode(500, new { Message = "An error occurred while adjusting leave balance." });
+            }
+        }
+
+        [HttpGet("types")]
+        public async Task<ActionResult<IEnumerable<LeaveType>>> GetLeaveTypes()
+        {
+            try
+            {
+                var types = await _leaveRecordService.GetLeaveTypesAsync();
+                return Ok(types);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving leave types");
+                return StatusCode(500, new { Message = "An error occurred while retrieving leave types." });
+            }
+        }
+
+        [HttpPut("types/{id}/quota")]
+        public async Task<IActionResult> UpdateLeaveTypeQuota(int id, [FromBody] decimal defaultQuota)
+        {
+            try
+            {
+                await _leaveRecordService.UpdateLeaveTypeQuotaAsync(id, defaultQuota);
+                return Ok(new { Message = "Leave type quota updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating leave type quota");
+                return StatusCode(500, new { Message = "An error occurred while updating the leave quota." });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                _logger.LogInformation("Deleting leave record: {LeaveRecordId}", id);
                 await _leaveRecordService.DeleteAsync(id);
-                _logger.LogInformation("Leave record deleted successfully: {LeaveRecordId}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting leave record: {LeaveRecordId}", id);
+                _logger.LogError(ex, "Error deleting leave record: {Id}", id);
                 return StatusCode(500, new { Message = "An error occurred while deleting the leave record" });
             }
         }
